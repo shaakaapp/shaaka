@@ -66,7 +66,7 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
       } else {
-        // Navigate to appropriate home page
+        // Navigate to appropriate home 
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
