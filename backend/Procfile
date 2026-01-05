@@ -1,0 +1,2 @@
+web: gunicorn shaaka_backend.wsgi:application
+
