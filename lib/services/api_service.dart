@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../models/user_profile.dart';
 import '../models/product.dart';
+import '../models/cart_order_models.dart';
 
 class ApiService {
   // Change this to your Render backend URL when deployed
@@ -387,5 +388,226 @@ class ApiService {
         'error': e.toString(),
       };
     }
+    // --- CART API ---
+
+  static Future<Map<String, dynamic>> getCart(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/cart/$userId/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': Cart.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
   }
+
+  static Future<Map<String, dynamic>> addToCart(int userId, int productId, int quantity) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/cart/$userId/add/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'product_id': productId,
+          'quantity': quantity,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': Cart.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateCartItem(int userId, int itemId, int quantity) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/cart/$userId/update/$itemId/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'quantity': quantity,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': Cart.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> removeFromCart(int userId, int itemId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/cart/$userId/remove/$itemId/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': Cart.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> clearCart(int userId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/cart/$userId/clear/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': Cart.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // --- ORDERS API ---
+
+  static Future<Map<String, dynamic>> placeOrder(int userId, Map<String, dynamic> orderData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders/$userId/place/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(orderData),
+      );
+
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': Order.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getOrders(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/orders/$userId/list/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final orders = data.map((json) => Order.fromJson(json)).toList();
+        return {
+          'success': true,
+          'data': orders,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getOrderDetails(int orderId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/orders/detail/$orderId/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': Order.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
 }
