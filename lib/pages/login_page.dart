@@ -80,7 +80,9 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              result['error']?['error'] ?? 'Login failed. Please try again.',
+              result['error'] is Map
+                  ? (result['error']['error'] ?? 'Login failed')
+                  : result['error'].toString(),
             ),
             backgroundColor: Colors.red,
           ),

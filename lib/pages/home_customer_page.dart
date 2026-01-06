@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
+import 'store_page.dart';
 
 class HomeCustomerPage extends StatefulWidget {
   const HomeCustomerPage({super.key});
@@ -15,7 +16,7 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Customer Home'),
+        title: const Text('Store'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -42,35 +43,7 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
           ),
         ],
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.shopping_cart,
-              size: 100,
-              color: Colors.blue,
-            ),
-            SizedBox(height: 24),
-            Text(
-              'Welcome Customer!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Browse and shop from vendors',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
+      body: const StorePage(isVendorView: false),
     );
   }
 }
-

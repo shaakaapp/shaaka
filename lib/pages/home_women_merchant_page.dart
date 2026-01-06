@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
+import 'store_page.dart';
+import 'add_product_page.dart';
 
 class HomeWomenMerchantPage extends StatefulWidget {
   const HomeWomenMerchantPage({super.key});
@@ -11,11 +13,24 @@ class HomeWomenMerchantPage extends StatefulWidget {
 }
 
 class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
+  int _selectedIndex = 0; // Default to first tab (Common Store)
+
+  static const List<Widget> _pages = <Widget>[
+    StorePage(isVendorView: false), // Common Store (Amazon style)
+    StorePage(isVendorView: true), // My Business
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Women Merchant Home'),
+        title: Text(_selectedIndex == 0 ? 'Shaaka Store' : 'My Business'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -42,35 +57,31 @@ class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
           ),
         ],
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.business_center,
-              size: 100,
-              color: Colors.purple,
-            ),
-            SizedBox(height: 24),
-            Text(
-              'Welcome Women Merchant!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Manage your business and grow',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.storefront),
+            label: 'My Business',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.purple,
+        onTap: _onItemTapped,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AddProductPage()),
+          ).then((_) => setState(() {})); 
+        },
+        backgroundColor: Colors.purple,
+        child: const Icon(Icons.add),
       ),
     );
   }
 }
-
