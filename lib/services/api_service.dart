@@ -7,7 +7,7 @@ import '../models/product.dart';
 
 class ApiService {
   // Change this to your Render backend URL when deployed
-  static const String baseUrl = 'http://10.10.15.111:8000/api';
+  static const String baseUrl = 'https://shaaka-33pq.onrender.com/api';
   // For production: static const String baseUrl = 'https://your-backend.onrender.com/api';
 
   // Request OTP
@@ -146,7 +146,7 @@ class ApiService {
   }
 
   // Upload Image to Cloudinary
-  static Future<Map<String, dynamic>> uploadImage(XFile imageFile) async {
+  static Future<Map<String, dynamic>> uploadImage(XFile imageFile, {String type = 'profile'}) async {
     try {
       var request = http.MultipartRequest(
         'POST',
@@ -162,6 +162,7 @@ class ApiService {
         contentType: MediaType('image', 'jpeg'),
       );
       request.files.add(multipartFile);
+      request.fields['type'] = type;
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);

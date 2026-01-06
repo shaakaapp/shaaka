@@ -54,16 +54,28 @@ def upload_image(request):
     try:
         image_file = request.FILES['image']
         
-        # Upload to Cloudinary
-        upload_result = cloudinary.uploader.upload(
-            image_file,
-            folder='shaaka/profile_pics',
-            resource_type='image',
-            transformation=[
+        upload_type = request.data.get('type', 'profile')
+        
+        if upload_type == 'product':
+            folder = 'shaaka/products'
+            transformation = [
+                {'quality': 'auto'},
+                {'fetch_format': 'auto'}
+            ]
+        else:
+            folder = 'shaaka/profile_pics'
+            transformation = [
                 {'width': 400, 'height': 400, 'crop': 'fill', 'gravity': 'face'},
                 {'quality': 'auto'},
                 {'format': 'jpg'}
             ]
+
+        # Upload to Cloudinary
+        upload_result = cloudinary.uploader.upload(
+            image_file,
+            folder=folder,
+            resource_type='image',
+            transformation=transformation
         )
         
         return Response({

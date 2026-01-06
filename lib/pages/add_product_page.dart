@@ -108,7 +108,7 @@ class _AddProductPageState extends State<AddProductPage> {
     // 1. Upload Images First
     List<String> imageUrls = [];
     for (var image in _selectedImages) {
-      final uploadResult = await ApiService.uploadImage(image);
+      final uploadResult = await ApiService.uploadImage(image, type: 'product');
       if (uploadResult['success'] == true) {
         imageUrls.add(uploadResult['url']);
       } else {
