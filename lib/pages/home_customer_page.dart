@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
+import 'donations_page.dart';
 import 'store_page.dart';
 import 'cart_page.dart';
 import 'my_orders_page.dart';
@@ -19,6 +20,16 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
       appBar: AppBar(
         title: const Text('Store'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.volunteer_activism),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const DonationsPage(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {

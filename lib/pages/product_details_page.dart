@@ -240,6 +240,29 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
   }
 
+  Future<void> _addToCart() async {
+    final userId = await StorageService.getUserId();
+    if (userId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to add items to cart')));
+      return;
+    }
+
+    setState(() => _isLoadingReviews = true); // Reuse loading state or add new one? reused for now or just generic loading overlay
+
+    final result = await ApiService.addToCart(userId, _product.id, 1); // Default quantity 1
+
+    setState(() => _isLoadingReviews = false);
+
+    if (mounted) {
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to Cart!'), backgroundColor: Colors.green));
+      } else {
+        _showError(result['error']);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -248,6 +271,31 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         onPressed: _showAddReviewDialog,
         label: Text(_userReview != null ? 'Edit Review' : 'Write Review'),
         icon: Icon(_userReview != null ? Icons.edit : Icons.rate_review),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: ElevatedButton.icon(
+          onPressed: _addToCart,
+          icon: const Icon(Icons.shopping_cart),
+          label: const Text('Add to Cart'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(

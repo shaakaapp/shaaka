@@ -665,7 +665,7 @@ class ApiService {
     }
   }
 
-  }
+
 
   // --- ADDRESS API ---
 
@@ -702,6 +702,58 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(addressData),
       );
+
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': jsonDecode(response.body),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // --- DONATIONS API ---
+
+  static Future<Map<String, dynamic>> createDonation(
+      int userId, Map<String, String> fields, XFile? image) async {
+    try {
+      final uri = Uri.parse('$baseUrl/donations/create/$userId/');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add fields
+      fields.forEach((key, value) {
+        request.fields[key] = value;
+      });
+
+      // Add image if exists (for item_image or payment_screenshot)
+      if (image != null) {
+        // Determine field name based on donation type
+        String fieldName = 'item_image'; // Default
+        if (fields['donation_type'] == 'Money') {
+          fieldName = 'payment_screenshot';
+        }
+        
+        // Infer content type roughly or just let it be octet-stream/inferred by server
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            fieldName,
+            image.path,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 201) {
         return {

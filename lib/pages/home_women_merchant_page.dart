@@ -3,6 +3,7 @@ import '../services/storage_service.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
 import 'store_page.dart';
+import 'donations_page.dart';
 import 'add_product_page.dart';
 
 class HomeWomenMerchantPage extends StatefulWidget {
@@ -32,6 +33,16 @@ class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
       appBar: AppBar(
         title: Text(_selectedIndex == 0 ? 'Shaaka Store' : 'My Business'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.volunteer_activism),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const DonationsPage(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
