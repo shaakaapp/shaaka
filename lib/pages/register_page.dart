@@ -38,6 +38,23 @@ class _RegisterPageState extends State<RegisterPage> {
   Uint8List? _profileImageBytes;
   String? _profileImageUrl;
 
+  // Password Validation State
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasLowercase = false;
+  bool _hasDigits = false;
+  bool _hasSpecialCharacters = false;
+
+  void _checkPassword(String password) {
+    setState(() {
+      _hasMinLength = password.length >= 8;
+      _hasUppercase = password.contains(RegExp(r'[A-Z]'));
+      _hasLowercase = password.contains(RegExp(r'[a-z]'));
+      _hasDigits = password.contains(RegExp(r'[0-9]'));
+      _hasSpecialCharacters = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    });
+  }
+
   final ImagePicker _imagePicker = ImagePicker();
 
   final List<String> _categories = ['Customer', 'Vendor', 'Women Merchant'];
@@ -56,10 +73,31 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _requestOTP() async {
-    if (_mobileController.text.trim().isEmpty) {
+    String mobile = _mobileController.text.trim();
+    if (mobile.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter your mobile number first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    if (mobile.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mobile number must be exactly 10 digits'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!RegExp(r'^[6-9]').hasMatch(mobile)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mobile number must start with 6, 7, 8, or 9'),
           backgroundColor: Colors.red,
         ),
       );
@@ -333,10 +371,24 @@ class _RegisterPageState extends State<RegisterPage> {
                           labelText: 'Mobile Number',
                           prefixIcon: Icon(Icons.phone),
                           border: OutlineInputBorder(),
+                          counterText: "", // Hide maxLength counter if desired, or keep it
                         ),
+                        maxLength: 10,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                         ],
+                        validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your mobile number';
+                            }
+                            if (value.length != 10) {
+                              return 'Mobile number must be exactly 10 digits';
+                            }
+                            if (!RegExp(r'^[6-9]').hasMatch(value)) {
+                              return 'Mobile number must start with 6, 7, 8, or 9';
+                            }
+                            return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       if (!_otpSent)
@@ -546,6 +598,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
+                      onChanged: _checkPassword,
                       decoration: InputDecoration(
                         labelText: 'Password *',
                         prefixIcon: const Icon(Icons.lock),
@@ -567,11 +620,22 @@ class _RegisterPageState extends State<RegisterPage> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter a password';
                         }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
+                        if (!_hasMinLength || !_hasUppercase || !_hasLowercase || !_hasDigits || !_hasSpecialCharacters) {
+                            return 'Password must meet all requirements';
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 8),
+                    // Password Requirements Checklist
+                    Column(
+                        children: [
+                            _buildPasswordRequirement('At least 8 characters', _hasMinLength),
+                            _buildPasswordRequirement('At least 1 uppercase letter', _hasUppercase),
+                            _buildPasswordRequirement('At least 1 lowercase letter', _hasLowercase),
+                            _buildPasswordRequirement('At least 1 number', _hasDigits),
+                            _buildPasswordRequirement('At least 1 special character', _hasSpecialCharacters),
+                        ],
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -640,6 +704,26 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPasswordRequirement(String requirement, bool isMet) {
+    return Row(
+      children: [
+        Icon(
+          isMet ? Icons.check_circle : Icons.circle_outlined,
+          color: isMet ? Colors.green : Colors.grey,
+          size: 16,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          requirement,
+          style: TextStyle(
+            color: isMet ? Colors.green : Colors.grey[600],
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 }

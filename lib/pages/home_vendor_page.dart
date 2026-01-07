@@ -16,17 +16,26 @@ class HomeVendorPage extends StatefulWidget {
 class _HomeVendorPageState extends State<HomeVendorPage> {
   int _selectedIndex = 0; // Default to first tab (Common Store)
 
-  static const List<Widget> _pages = <Widget>[
-    StorePage(isVendorView: false), // Common Store (Amazon style)
-    StorePage(isVendorView: true), // My Products
-    CartPage(),
-    MyOrdersPage(),
-    DonationsPage(),
+  int _refreshKey = 0;
+
+  List<Widget> get _pages => <Widget>[
+    StorePage(key: ValueKey('store_$_refreshKey'), isVendorView: false), // Common Store
+    StorePage(key: ValueKey('my_products_$_refreshKey'), isVendorView: true), // My Products
+    CartPage(key: ValueKey('cart_$_refreshKey')),
+    MyOrdersPage(key: ValueKey('orders_$_refreshKey')),
+    const DonationsPage(), // Donations form doesn't need refresh usually
   ];
+
+  void _refreshPages() {
+    setState(() {
+      _refreshKey++;
+    });
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      _refreshKey++; // Refresh when switching tabs to ensure latest data
     });
   }
 
@@ -102,7 +111,7 @@ class _HomeVendorPageState extends State<HomeVendorPage> {
               MaterialPageRoute(builder: (context) => const AddProductPage()),
             ).then((value) {
                 if (value == true) {
-                     setState(() {});
+                     _refreshPages();
                 }
             });
           },

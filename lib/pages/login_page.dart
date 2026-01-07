@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import 'home_customer_page.dart';
@@ -143,13 +144,21 @@ class _LoginPageState extends State<LoginPage> {
                     labelText: 'Mobile Number',
                     prefixIcon: Icon(Icons.phone),
                     border: OutlineInputBorder(),
+                    counterText: "",
                   ),
+                  maxLength: 10,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your mobile number';
                     }
-                    if (value.length < 10) {
-                      return 'Please enter a valid mobile number';
+                    if (value.length != 10) {
+                      return 'Mobile number must be exactly 10 digits';
+                    }
+                    if (!RegExp(r'^[6-9]').hasMatch(value)) {
+                      return 'Mobile number must start with 6, 7, 8, or 9';
                     }
                     return null;
                   },

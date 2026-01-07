@@ -5,6 +5,8 @@ import 'profile_page.dart';
 import 'store_page.dart';
 import 'donations_page.dart';
 import 'add_product_page.dart';
+import 'cart_page.dart';
+import 'my_orders_page.dart';
 
 class HomeWomenMerchantPage extends StatefulWidget {
   const HomeWomenMerchantPage({super.key});
@@ -13,17 +15,29 @@ class HomeWomenMerchantPage extends StatefulWidget {
   State<HomeWomenMerchantPage> createState() => _HomeWomenMerchantPageState();
 }
 
+
 class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
   int _selectedIndex = 0; // Default to first tab (Common Store)
+  int _refreshKey = 0;
 
-  static const List<Widget> _pages = <Widget>[
-    StorePage(isVendorView: false), // Common Store (Amazon style)
-    StorePage(isVendorView: true), // My Business
+  List<Widget> get _pages => <Widget>[
+    StorePage(key: ValueKey('store_$_refreshKey'), isVendorView: false), // Common Store
+    StorePage(key: ValueKey('my_business_$_refreshKey'), isVendorView: true), // My Business (My Products)
+    CartPage(key: ValueKey('cart_$_refreshKey')),
+    MyOrdersPage(key: ValueKey('orders_$_refreshKey')),
+    const DonationsPage(), 
   ];
+
+  void _refreshPages() {
+    setState(() {
+      _refreshKey++;
+    });
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      _refreshKey++; // Refresh when switching tabs
     });
   }
 
@@ -52,16 +66,6 @@ class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
           title: const Text('Shaaka'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.volunteer_activism),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const DonationsPage(),
-                  ),
-                );
-              },
-            ),
-            IconButton(
               icon: const Icon(Icons.person),
               onPressed: () {
                 Navigator.of(context).push(
@@ -75,29 +79,44 @@ class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
         ),
         body: _pages[_selectedIndex],
         bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed, // Needed for more than 3 items
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
-              label: 'Home',
+              label: 'Store',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.storefront),
               label: 'My Business',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_cart),
+              label: 'Cart',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.list_alt),
+              label: 'My Orders',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.volunteer_activism),
+              label: 'Donations',
             ),
           ],
           currentIndex: _selectedIndex,
           selectedItemColor: Colors.purple,
           onTap: _onItemTapped,
         ),
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: _selectedIndex == 1 ? FloatingActionButton(
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => const AddProductPage()),
-            ).then((_) => setState(() {})); 
+            ).then((value) {
+                 _refreshPages();
+            }); 
           },
           backgroundColor: Colors.purple,
           child: const Icon(Icons.add),
-        ),
+        ) : null,
       ),
     );
   }

@@ -4,7 +4,11 @@ from .models import UserProfile, UserAddress
 class UserAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAddress
-        fields = ['id', 'user', 'name', 'address_line', 'city', 'state', 'country', 'pincode', 'is_default']
+        fields = [
+            'id', 'user', 'full_name', 'mobile_number', 'pincode', 
+            'flat_house_building', 'area_street_sector', 'landmark', 
+            'town_city', 'state', 'country', 'is_default', 'delivery_instructions'
+        ]
         read_only_fields = ['id', 'user']
 
 

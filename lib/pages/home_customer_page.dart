@@ -14,7 +14,31 @@ class HomeCustomerPage extends StatefulWidget {
 }
 
 class _HomeCustomerPageState extends State<HomeCustomerPage> {
+  int _selectedIndex = 0;
+  int _refreshKey = 0;
   DateTime? _lastPressedAt;
+
+  List<Widget> get _pages => <Widget>[
+    StorePage(key: ValueKey('store_$_refreshKey'), isVendorView: false),
+    CartPage(key: ValueKey('cart_$_refreshKey')),
+    MyOrdersPage(key: ValueKey('orders_$_refreshKey')),
+    const DonationsPage(),
+  ];
+
+  void _refreshPages() {
+    setState(() {
+      _refreshKey++;
+    });
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+      if (index == 0 || index == 1 || index == 2) {
+         _refreshPages(); // Refresh store, cart, orders on tap
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,16 +63,6 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
           title: const Text('Shaaka'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.volunteer_activism),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const DonationsPage(),
-                  ),
-                );
-              },
-            ),
-            IconButton(
               icon: const Icon(Icons.person),
               onPressed: () {
                 Navigator.of(context).push(
@@ -58,29 +72,33 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
                 );
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.shopping_cart),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const CartPage(),
-                  ),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.list_alt),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const MyOrdersPage(),
-                  ),
-                );
-              },
-            ),
           ],
         ),
-        body: const StorePage(isVendorView: false),
+        body: _pages[_selectedIndex],
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Store',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_cart),
+              label: 'My Cart',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.list_alt),
+              label: 'My Orders',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.volunteer_activism),
+              label: 'Donations',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.deepPurple,
+          onTap: _onItemTapped,
+        ),
       ),
     );
   }

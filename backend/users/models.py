@@ -48,17 +48,21 @@ class UserProfile(models.Model):
 class UserAddress(models.Model):
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='addresses')
-    name = models.CharField(max_length=255, help_text="Label for address e.g., Home, Work")
-    address_line = models.TextField()
-    city = models.CharField(max_length=120)
+    full_name = models.CharField(max_length=255, default='')
+    mobile_number = models.CharField(max_length=20, default='')
+    pincode = models.CharField(max_length=10)
+    flat_house_building = models.CharField(max_length=255, help_text="Flat, House no., Building, Company, Apartment")
+    area_street_sector = models.CharField(max_length=255, help_text="Area, Street, Sector, Village")
+    landmark = models.CharField(max_length=255, blank=True, null=True)
+    town_city = models.CharField(max_length=120)
     state = models.CharField(max_length=120)
     country = models.CharField(max_length=120, default='India')
-    pincode = models.CharField(max_length=10)
     is_default = models.BooleanField(default=False)
+    delivery_instructions = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = 'user_addresses'
 
     def __str__(self):
-        return f"{self.name} - {self.user.full_name}"
+        return f"{self.full_name} - {self.town_city}"
