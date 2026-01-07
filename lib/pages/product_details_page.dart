@@ -14,13 +14,20 @@ class ProductDetailsPage extends StatefulWidget {
 
 class _ProductDetailsPageState extends State<ProductDetailsPage> {
   late Product _product;
+  ProductReview? _userReview;
+  int? _currentUserId;
   List<ProductReview> _reviews = [];
   bool _isLoadingReviews = false;
-  
+
   @override
   void initState() {
     super.initState();
     _product = widget.product;
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    _currentUserId = await StorageService.getUserId();
     _loadReviews();
   }
 
@@ -32,17 +39,28 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         _isLoadingReviews = false;
         if (result['success'] == true) {
           _reviews = result['data'];
+          if (_currentUserId != null) {
+            try {
+              _userReview = _reviews.firstWhere((r) => r.userId == _currentUserId);
+            } catch (e) {
+              _userReview = null;
+            }
+          }
         }
       });
     }
   }
 
   Future<void> _showAddReviewDialog() async {
-     final userId = await StorageService.getUserId();
-     if (userId == null) {
+     if (_currentUserId == null) {
           if(!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to review')));
           return;
+     }
+
+     if (_userReview != null) {
+       _showEditReviewDialog();
+       return;
      }
 
      final commentController = TextEditingController();
@@ -82,9 +100,67 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                  ElevatedButton(
                    onPressed: () async {
                       Navigator.pop(context); // Close dialog
-                      _submitReview(userId, rating, commentController.text.trim());
+                      _submitReview(_currentUserId!, rating, commentController.text.trim());
                    }, 
                    child: const Text('Submit')
+                 ),
+               ],
+             );
+           }
+         );
+       }
+     );
+  }
+
+  Future<void> _showEditReviewDialog() async {
+     final commentController = TextEditingController(text: _userReview!.comment);
+     int rating = _userReview!.rating;
+
+     showDialog(
+       context: context,
+       builder: (context) {
+         return StatefulBuilder(
+           builder: (context, setStateDialog) {
+             return AlertDialog(
+               title: const Text('Edit Your Review'),
+               content: Column(
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          onPressed: () => setStateDialog(() => rating = index + 1),
+                          icon: Icon(
+                            index < rating ? Icons.star : Icons.star_border,
+                            color: Colors.amber,
+                          ),
+                        );
+                      }),
+                    ),
+                    TextField(
+                      controller: commentController,
+                      decoration: const InputDecoration(labelText: 'Comment (Optional)', border: OutlineInputBorder()),
+                      maxLines: 3,
+                    ),
+                 ],
+               ),
+               actions: [
+                 TextButton(
+                    onPressed: () {
+                         Navigator.pop(context);
+                         _deleteReview();
+                    },
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    child: const Text('Delete'),
+                 ),
+                 TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                 ElevatedButton(
+                   onPressed: () async {
+                      Navigator.pop(context); // Close dialog
+                      _updateReview(rating, commentController.text.trim());
+                   }, 
+                   child: const Text('Update')
                  ),
                ],
              );
@@ -105,20 +181,63 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
        if (result['success'] == true) {
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review Submitted!'), backgroundColor: Colors.green));
-           // Refresh Product Details to get updated rating
-           final productResult = await ApiService.getProductDetails(_product.id);
-           if (productResult['success'] == true) {
-                setState(() {
-                    _product = productResult['data'];
-                });
-           }
-           _loadReviews(); // Refresh reviews list
+           _refreshProductAndReviews();
        } else {
-            String error = result['error'] is Map 
-                ? (result['error']['non_field_errors']?[0] ?? result['error']['error'] ?? 'Failed to submit') 
-                : result['error'].toString();
-           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+            _showError(result['error']);
        }
+  }
+
+  Future<void> _updateReview(int rating, String comment) async {
+       if (_userReview == null) return;
+       
+       final result = await ApiService.updateReview(_userReview!.id, {
+           'rating': rating,
+           'comment': comment,
+       });
+
+       if (!mounted) return;
+
+       if (result['success'] == true) {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review Updated!'), backgroundColor: Colors.green));
+           _refreshProductAndReviews();
+       } else {
+            _showError(result['error']);
+       }
+  }
+
+  Future<void> _deleteReview() async {
+       if (_userReview == null) return;
+
+       // Confirm delete? Maybe overkill for now, just delete.
+       final result = await ApiService.deleteReview(_userReview!.id);
+
+       if (!mounted) return;
+
+       if (result['success'] == true) {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review Deleted!'), backgroundColor: Colors.grey));
+           _userReview = null; // Clear local reference immediately
+           _refreshProductAndReviews();
+       } else {
+            _showError(result['error']);
+       }
+  }
+
+  Future<void> _refreshProductAndReviews() async {
+      // Refresh Product Details to get updated rating
+      final productResult = await ApiService.getProductDetails(_product.id);
+      if (productResult['success'] == true) {
+           setState(() {
+               _product = productResult['data'];
+           });
+      }
+      _loadReviews(); // Refresh reviews list
+  }
+  
+  void _showError(dynamic error) {
+      String errorMessage = error is Map 
+        ? (error['non_field_errors']?[0] ?? error['error'] ?? 'Operation failed') 
+        : error.toString();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
   }
 
   @override
@@ -127,8 +246,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       appBar: AppBar(title: Text(_product.name)),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddReviewDialog,
-        label: const Text('Write Review'),
-        icon: const Icon(Icons.rate_review),
+        label: Text(_userReview != null ? 'Edit Review' : 'Write Review'),
+        icon: Icon(_userReview != null ? Icons.edit : Icons.rate_review),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -167,9 +286,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                          decoration: BoxDecoration(color: Colors.amber[100], borderRadius: BorderRadius.circular(4)),
                          child: Row(
                            children: [
-                              const Icon(Icons.star, size: 16, color: Colors.purple), // Using purple or amber
-                              const SizedBox(width: 4),
-                              Text('${_product.averageRating} (${_product.ratingCount} reviews)', style: const TextStyle(fontWeight: FontWeight.bold)),
+                               const Icon(Icons.star, size: 16, color: Colors.purple), // Using purple or amber
+                               const SizedBox(width: 4),
+                               Text('${_product.averageRating} (${_product.ratingCount} reviews)', style: const TextStyle(fontWeight: FontWeight.bold)),
                            ],
                          ),
                        )
@@ -198,11 +317,17 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         itemCount: _reviews.length,
                         itemBuilder: (context, index) {
                           final review = _reviews[index];
+                          // Highlight user review?
+                          final isUserReview = _currentUserId != null && review.userId == _currentUserId;
+                          
                           return Card(
+                            color: isUserReview ? Colors.blue[50] : null,
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
-                              leading: CircleAvatar(child: Text(review.userName[0].toUpperCase())),
-                              title: Text(review.userName),
+                              leading: CircleAvatar(
+                                backgroundColor: isUserReview ? Colors.blue : null,
+                                child: Text(review.userName[0].toUpperCase())),
+                              title: Text(review.userName + (isUserReview ? ' (You)' : '')),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [

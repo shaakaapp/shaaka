@@ -1,5 +1,12 @@
 from rest_framework import serializers
-from .models import UserProfile
+from .models import UserProfile, UserAddress
+
+class UserAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserAddress
+        fields = ['id', 'user', 'name', 'address_line', 'city', 'state', 'country', 'pincode', 'is_default']
+        read_only_fields = ['id', 'user']
+
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

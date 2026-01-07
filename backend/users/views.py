@@ -4,8 +4,10 @@ from rest_framework.response import Response
 from .models import UserProfile
 from .serializers import (
     UserProfileSerializer, LoginSerializer,
-    OTPSerializer, OTPRequestSerializer
+    OTPSerializer, OTPRequestSerializer,
+    UserAddressSerializer
 )
+from .models import UserProfile, UserAddress
 import random
 import string
 from django.utils import timezone
@@ -315,3 +317,62 @@ def update_profile(request, user_id):
             {'error': 'User not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+
+@api_view(['GET', 'POST'])
+def user_addresses_list_create(request, user_id):
+    try:
+        user = UserProfile.objects.get(id=user_id)
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        # Return profile address (as a special entry) + saved addresses
+        addresses = UserAddress.objects.filter(user=user).order_by('-is_default', '-created_at')
+        serializer = UserAddressSerializer(addresses, many=True)
+        
+        # Add Profile Address manually if it exists
+        profile_address = {
+            'id': 'profile', # Special ID
+            'name': 'Profile Address (Default)',
+            'address_line': user.address_line,
+            'city': user.city,
+            'state': user.state,
+            'country': user.country or 'India',
+            'pincode': user.pincode,
+            'is_default': True # Treat as default usually, or based on logic
+        }
+        
+        # You might want to merge them or just return the saved ones
+        # For now, let's return only saved addresses here, but frontend can manage merging.
+        # Actually, let's include profile address in the response if user wants all options.
+        
+        return Response({
+            'profile_address': profile_address,
+            'saved_addresses': serializer.data
+        })
+    
+    elif request.method == 'POST':
+        serializer = UserAddressSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PUT', 'DELETE'])
+def user_address_detail(request, user_id, address_id):
+    try:
+        user = UserProfile.objects.get(id=user_id)
+        address = UserAddress.objects.get(id=address_id, user=user)
+    except (UserProfile.DoesNotExist, UserAddress.DoesNotExist):
+        return Response({'error': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = UserAddressSerializer(address, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        address.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

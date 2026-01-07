@@ -44,3 +44,21 @@ class UserProfile(models.Model):
         self.updated_at = timezone.now()
         super().save(*args, **kwargs)
 
+
+class UserAddress(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='addresses')
+    name = models.CharField(max_length=255, help_text="Label for address e.g., Home, Work")
+    address_line = models.TextField()
+    city = models.CharField(max_length=120)
+    state = models.CharField(max_length=120)
+    country = models.CharField(max_length=120, default='India')
+    pincode = models.CharField(max_length=10)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'user_addresses'
+
+    def __str__(self):
+        return f"{self.name} - {self.user.full_name}"

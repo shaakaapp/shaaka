@@ -389,6 +389,60 @@ class ApiService {
       };
     }
   }
+
+  // Update Review
+  static Future<Map<String, dynamic>> updateReview(int reviewId, Map<String, dynamic> reviewData) async {
+     try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/reviews/$reviewId/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(reviewData),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': ProductReview.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Delete Review
+  static Future<Map<String, dynamic>> deleteReview(int reviewId) async {
+     try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/reviews/$reviewId/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 204) {
+        return {
+          'success': true,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Failed to delete review',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
     // --- CART API ---
 
   static Future<Map<String, dynamic>> getCart(int userId) async {
@@ -596,6 +650,63 @@ class ApiService {
         return {
           'success': true,
           'data': Order.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  }
+
+  // --- ADDRESS API ---
+
+  static Future<Map<String, dynamic>> getUserAddresses(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/$userId/addresses/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': jsonDecode(response.body),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> addUserAddress(int userId, Map<String, dynamic> addressData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/users/$userId/addresses/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(addressData),
+      );
+
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': jsonDecode(response.body),
         };
       } else {
         return {

@@ -14,6 +14,7 @@ class ProductImage {
 
 class ProductReview {
   final int id;
+  final int userId;
   final String userName;
   final int rating;
   final String? comment;
@@ -21,6 +22,7 @@ class ProductReview {
 
   ProductReview({
     required this.id,
+    required this.userId,
     required this.userName,
     required this.rating,
     this.comment,
@@ -30,6 +32,7 @@ class ProductReview {
   factory ProductReview.fromJson(Map<String, dynamic> json) {
     return ProductReview(
       id: json['id'],
+      userId: json['user'],
       userName: json['user_name'] ?? 'Anonymous',
       rating: json['rating'],
       comment: json['comment'],
