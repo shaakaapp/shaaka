@@ -388,6 +388,7 @@ class ApiService {
         'error': e.toString(),
       };
     }
+  }
     // --- CART API ---
 
   static Future<Map<String, dynamic>> getCart(int userId) async {

@@ -1,4 +1,4 @@
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status, permissions, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
@@ -60,3 +60,7 @@ class ProductReviewListCreateView(generics.ListCreateAPIView):
             raise serializers.ValidationError("You have already reviewed this product.")
             
         serializer.save(product=product, user=user)
+
+class ProductReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ProductReview.objects.all()
+    serializer_class = ProductReviewSerializer
