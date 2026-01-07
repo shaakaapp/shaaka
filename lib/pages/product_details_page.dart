@@ -286,13 +286,19 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           ],
         ),
         child: ElevatedButton.icon(
-          onPressed: _addToCart,
+          onPressed: (_currentUserId != null && _currentUserId == _product.vendorId)
+              ? null
+              : _addToCart,
           icon: const Icon(Icons.shopping_cart),
-          label: const Text('Add to Cart'),
+          label: Text((_currentUserId != null && _currentUserId == _product.vendorId)
+              ? 'Your Product'
+              : 'Add to Cart'),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
             backgroundColor: Colors.orange,
+            disabledBackgroundColor: Colors.grey[300],
             foregroundColor: Colors.white,
+            disabledForegroundColor: Colors.grey[600],
             textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),

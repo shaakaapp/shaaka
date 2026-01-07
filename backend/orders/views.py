@@ -32,6 +32,10 @@ def add_to_cart(request, user_id):
         # Check stock
         if product.stock_quantity < quantity:
             return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Check if user is the vendor
+        if product.vendor == user:
+            return Response({'error': 'You cannot add your own product to cart'}, status=status.HTTP_400_BAD_REQUEST)
         
         cart_item, item_created = CartItem.objects.get_or_create(
             cart=cart, 

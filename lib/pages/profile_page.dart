@@ -563,7 +563,29 @@ class _ProfilePageState extends State<ProfilePage> {
                   },
                   child: const Text('Cancel'),
                 ),
-            ],
+            ] else 
+               Padding(
+                 padding: const EdgeInsets.only(top: 24.0),
+                 child: OutlinedButton.icon(
+                   onPressed: () async {
+                      await StorageService.clearAll();
+                      if (mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
+                          (route) => false,
+                        );
+                      }
+                   },
+                   icon: const Icon(Icons.logout, color: Colors.red),
+                   label: const Text('Logout', style: TextStyle(color: Colors.red)),
+                   style: OutlinedButton.styleFrom(
+                     side: const BorderSide(color: Colors.red),
+                     padding: const EdgeInsets.symmetric(vertical: 12),
+                   ),
+                 ),
+               ),
           ],
         ),
       ),

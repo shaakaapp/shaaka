@@ -53,10 +53,11 @@ class _LoginPageState extends State<LoginPage> {
       // Check if profile is complete (address is required)
       if (user.addressLine == null || user.addressLine!.isEmpty) {
         if (mounted) {
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (context) => const ProfilePage(isCompletingProfile: true),
             ),
+            (route) => false,
           );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -68,10 +69,11 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         // Navigate to appropriate home 
         if (mounted) {
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (context) => _getHomePage(user.category),
             ),
+            (route) => false,
           );
         }
       }
