@@ -24,9 +24,9 @@ class Donation(models.Model):
 
     # Fields for Food/Clothes
     item_name = models.CharField(max_length=255, blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField()
     quantity = models.CharField(max_length=100, blank=True, null=True) # e.g., "5 kg", "2 bags"
-    item_image = models.ImageField(upload_to='donations/items/', blank=True, null=True)
+    item_image = models.ImageField(upload_to='donations/items/')
     pickup_address = models.TextField(blank=True, null=True)
     contact_number = models.CharField(max_length=20, blank=True, null=True)
     email = models.CharField(max_length=255, blank=True, null=True)

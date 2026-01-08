@@ -70,7 +70,7 @@ class _AddProductPageState extends State<AddProductPage> {
       _nameController.text = widget.product!.name;
       _priceController.text = widget.product!.price.toString();
       _stockController.text = widget.product!.stockQuantity.toString();
-      _descriptionController.text = widget.product!.description;
+      _descriptionController.text = widget.product!.description ?? '';
       _selectedUnit = widget.product!.unit;
       
       // Ensure category exists in list, else default or add
@@ -254,8 +254,10 @@ class _AddProductPageState extends State<AddProductPage> {
                 controller: _descriptionController,
                 maxLines: 3,
                 decoration: const InputDecoration(
-                    labelText: 'Description (Optional)',
+                    labelText: 'Description *',
                     border: OutlineInputBorder()),
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 24),
               

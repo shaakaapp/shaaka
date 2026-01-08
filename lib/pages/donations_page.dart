@@ -53,8 +53,8 @@ class _DonationsPageState extends State<DonationsPage> {
   Future<void> _submitDonation() async {
     if (!_formKey.currentState!.validate()) return;
     
-    if (_selectedType == 'Money' && _selectedImage == null) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please upload payment screenshot')));
+    if (_selectedImage == null) {
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please upload an image')));
        return;
     }
 
@@ -162,8 +162,9 @@ class _DonationsPageState extends State<DonationsPage> {
                  const SizedBox(height: 16),
                  TextFormField(
                    controller: _descriptionController,
-                   decoration: const InputDecoration(labelText: 'Description (Optional)', border: OutlineInputBorder()),
+                   decoration: const InputDecoration(labelText: 'Description *', border: OutlineInputBorder()),
                    maxLines: 3,
+                   validator: (v) => v!.isEmpty ? 'Required' : null,
                  ),
                  const SizedBox(height: 16),
                  TextFormField(
@@ -194,7 +195,7 @@ class _DonationsPageState extends State<DonationsPage> {
                            mainAxisAlignment: MainAxisAlignment.center,
                            children: [
                              Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-                             Text('Add Item Image (Optional)', style: TextStyle(color: Colors.grey)),
+                             Text('Add Item Image *', style: TextStyle(color: Colors.grey)),
                            ],
                          ),
                    ),
