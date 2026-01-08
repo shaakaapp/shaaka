@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../widgets/product_card.dart';
 import '../services/storage_service.dart';
 import 'product_details_page.dart';
+import 'add_product_page.dart';
 
 class StorePage extends StatefulWidget {
   final bool isVendorView;
@@ -119,6 +120,13 @@ class _StorePageState extends State<StorePage> {
                     MaterialPageRoute(builder: (context) => ProductDetailsPage(product: _products[index]))
                 ).then((_) => _loadProducts()); // Reload in case rating changed
             },
+            onEdit: widget.isVendorView ? () {
+                 Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => AddProductPage(product: _products[index]))
+                ).then((value) {
+                     if (value == true) _loadProducts();
+                });
+            } : null,
           );
         },
       ),

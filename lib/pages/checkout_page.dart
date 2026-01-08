@@ -83,6 +83,49 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
+  Future<void> _editAddress(Map<String, dynamic> address) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AddressFormPage(initialData: address)),
+    );
+
+    if (result == true) {
+      _loadData(); // Refresh addresses if updated
+    }
+  }
+
+  Future<void> _deleteAddress(Map<String, dynamic> address) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Address'),
+        content: const Text('Are you sure you want to delete this address?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+      final userId = await StorageService.getUserId();
+      // Ensure ID is valid (int)
+      if (address['id'] is int) {
+         final result = await ApiService.deleteUserAddress(userId!, address['id']);
+         if (result['success'] == true) {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Address deleted')));
+            _loadData();
+         } else {
+            setState(() => _isLoading = false);
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: ${result['error']}')));
+         }
+      } else {
+         setState(() => _isLoading = false); // Should not happen for saved addresses
+      }
+    }
+  }
+
   Future<void> _placeOrder() async {
     if (_selectedAddress == null) {
        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a delivery address')));
@@ -192,13 +235,43 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
-                        child: RadioListTile<dynamic>(
-                          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(subtitle),
-                          value: addr,
-                          groupValue: _selectedAddress,
-                          onChanged: (val) => setState(() => _selectedAddress = val),
-                          activeColor: Colors.green,
+                        child: Column(
+                          children: [
+                            RadioListTile<dynamic>(
+                              title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text(subtitle),
+                              value: addr,
+                              groupValue: _selectedAddress,
+                              onChanged: (val) => setState(() => _selectedAddress = val),
+                              activeColor: Colors.green,
+                            ),
+                            // Only show actions for saved addresses, not profile default if needed (though API treats all as address objects)
+                            // Assuming 'profile' ID is special or we check if it's deletable.
+                            // The backend returns 'profile_address' separate from 'saved_addresses' usually, but here we merged them.
+                            // Profile address has ID 'profile' which is string, others are int.
+                            if (addr['id'] != 'profile') 
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.edit, size: 16),
+                                      label: const Text('Edit'),
+                                      onPressed: () => _editAddress(addr),
+                                      style: TextButton.styleFrom(foregroundColor: Colors.blue),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.delete, size: 16),
+                                      label: const Text('Delete'),
+                                      onPressed: () => _deleteAddress(addr),
+                                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
                       );
                   }).toList(),

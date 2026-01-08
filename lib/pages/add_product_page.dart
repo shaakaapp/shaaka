@@ -4,9 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
+import '../models/product.dart';
 
 class AddProductPage extends StatefulWidget {
-  const AddProductPage({super.key});
+  final Product? product;
+
+  const AddProductPage({super.key, this.product});
 
   @override
   State<AddProductPage> createState() => _AddProductPageState();
@@ -61,6 +64,23 @@ class _AddProductPageState extends State<AddProductPage> {
   final ImagePicker _picker = ImagePicker();
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.product != null) {
+      _nameController.text = widget.product!.name;
+      _priceController.text = widget.product!.price.toString();
+      _stockController.text = widget.product!.stockQuantity.toString();
+      _descriptionController.text = widget.product!.description;
+      _selectedUnit = widget.product!.unit;
+      
+      // Ensure category exists in list, else default or add
+      if (_categories.contains(widget.product!.category)) {
+        _selectedCategory = widget.product!.category;
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _priceController.dispose();
@@ -87,7 +107,7 @@ class _AddProductPageState extends State<AddProductPage> {
   Future<void> _addProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedImages.isEmpty) {
+    if (_selectedImages.isEmpty && widget.product == null) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please add at least one image')));
       return;
@@ -133,13 +153,18 @@ class _AddProductPageState extends State<AddProductPage> {
       'images': imageUrls,
     };
 
-    final result = await ApiService.addProduct(productData);
+    Map<String, dynamic> result;
+    if (widget.product != null) {
+        result = await ApiService.updateProduct(widget.product!.id, productData);
+    } else {
+        result = await ApiService.addProduct(productData);
+    }
 
     setState(() => _isLoading = false);
 
     if (result['success'] == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Product Added Successfully!'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(widget.product != null ? 'Product Updated Successfully!' : 'Product Added Successfully!'),
           backgroundColor: Colors.green));
       Navigator.pop(context, true);
     } else {
@@ -156,7 +181,7 @@ class _AddProductPageState extends State<AddProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Product')),
+      appBar: AppBar(title: Text(widget.product != null ? 'Edit Product' : 'Add Product')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -295,7 +320,7 @@ class _AddProductPageState extends State<AddProductPage> {
                     padding: const EdgeInsets.symmetric(vertical: 16)),
                 child: _isLoading
                     ? const CircularProgressIndicator()
-                    : const Text('Add Product'),
+                    : Text(widget.product != null ? 'Update Product' : 'Add Product'),
               ),
             ],
           ),

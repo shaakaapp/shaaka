@@ -246,6 +246,34 @@ class ApiService {
     }
   }
 
+  // Update Product
+  static Future<Map<String, dynamic>> updateProduct(int productId, Map<String, dynamic> productData) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/products/$productId/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(productData),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': Product.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
   // Get All Products (Global Market)
   static Future<Map<String, dynamic>> getProducts() async {
     try {
@@ -712,6 +740,58 @@ class ApiService {
         return {
           'success': false,
           'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateUserAddress(int userId, int addressId, Map<String, dynamic> addressData) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/users/$userId/addresses/$addressId/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(addressData),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': jsonDecode(response.body),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> deleteUserAddress(int userId, int addressId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/users/$userId/addresses/$addressId/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 204) {
+        return {
+          'success': true,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Failed to delete address',
         };
       }
     } catch (e) {

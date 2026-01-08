@@ -114,7 +114,14 @@ class _AddressFormPageState extends State<AddressFormPage> {
         'delivery_instructions': _deliveryInstructionsController.text.trim(),
       };
 
-      final result = await ApiService.addUserAddress(userId, addressData);
+      Map<String, dynamic> result;
+      if (widget.initialData != null && widget.initialData!['id'] != null) {
+        // Update existing address
+        result = await ApiService.updateUserAddress(userId, widget.initialData!['id'], addressData);
+      } else {
+        // Create new address
+        result = await ApiService.addUserAddress(userId, addressData);
+      }
 
       if (mounted) {
         if (result['success'] == true) {

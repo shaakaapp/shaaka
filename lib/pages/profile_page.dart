@@ -6,9 +6,7 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../constants/location_data.dart';
 
-import 'home_customer_page.dart';
-import 'home_vendor_page.dart';
-import 'home_women_merchant_page.dart';
+
 import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -247,11 +245,12 @@ class _ProfilePageState extends State<ProfilePage> {
       );
 
       if (widget.isCompletingProfile) {
-        // Navigate to Home Page
-        Navigator.of(context).pushReplacement(
+        // Navigate to Login Page
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => _getHomePage(_userProfile!.category),
+            builder: (context) => const LoginPage(),
           ),
+          (route) => false,
         );
       }
     } else {
@@ -268,18 +267,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _getHomePage(String category) {
-    switch (category) {
-      case 'Customer':
-        return const HomeCustomerPage();
-      case 'Vendor':
-        return const HomeVendorPage();
-      case 'Women Merchant':
-        return const HomeWomenMerchantPage();
-      default:
-        return const HomeCustomerPage();
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {

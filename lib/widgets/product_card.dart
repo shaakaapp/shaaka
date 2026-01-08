@@ -6,11 +6,13 @@ import '../services/storage_service.dart';
 class ProductCard extends StatefulWidget {
   final Product product;
   final VoidCallback? onTap;
+  final VoidCallback? onEdit;
 
   const ProductCard({
     super.key,
     required this.product,
     this.onTap,
+    this.onEdit,
   });
 
   @override
@@ -129,7 +131,18 @@ class _ProductCardState extends State<ProductCard> {
                             fontSize: 14,
                           ),
                         ),
-                        if (widget.product.stockQuantity == 0)
+                        if (widget.onEdit != null)
+                          SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: IconButton(
+                              icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
+                              onPressed: widget.onEdit,
+                              padding: EdgeInsets.zero,
+                              style: IconButton.styleFrom(backgroundColor: Colors.blue[50]),
+                            ),
+                          )
+                        else if (widget.product.stockQuantity == 0)
                           const Text('Out of Stock',
                               style: TextStyle(
                                   color: Colors.red,

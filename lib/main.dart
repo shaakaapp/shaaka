@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'widgets/connectivity_wrapper.dart';
+
 import 'pages/home_customer_page.dart';
 import 'pages/home_vendor_page.dart';
 import 'pages/home_women_merchant_page.dart';
 import 'services/storage_service.dart';
+
+// Global key for Navigator state
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   runApp(const MyApp());
@@ -17,11 +23,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Shaaka',
+      navigatorKey: navigatorKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const AuthCheck(),
+      builder: (context, child) {
+        return ConnectivityWrapper(child: child!);
+      },
+      initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
