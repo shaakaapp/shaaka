@@ -25,11 +25,18 @@ class _StorePageState extends State<StorePage> {
   List<Product> _products = [];
   bool _isLoading = true;
   String? _error;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProducts() async {
@@ -46,7 +53,7 @@ class _StorePageState extends State<StorePage> {
         }
         
         if (id != null) {
-             result = await ApiService.getVendorProducts(id);
+             result = await ApiService.getVendorProducts(id, query: _searchController.text.trim());
         } else {
             result = {'success': false, 'error': 'User not logged in'};
         }
@@ -105,7 +112,34 @@ class _StorePageState extends State<StorePage> {
     return Column(
       children: [
         // Search Header
-        if (!widget.isVendorView)
+        // Search Header
+        if (widget.isVendorView)
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                    hintText: 'Search your products...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchController.text.isNotEmpty 
+                        ? IconButton(
+                            icon: const Icon(Icons.clear), 
+                            onPressed: () {
+                                _searchController.clear();
+                                _loadProducts();
+                            }
+                          ) 
+                        : null,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide(color: Colors.grey[300]!)),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0)
+                ),
+                onSubmitted: (_) => _loadProducts(),
+            ),
+          )
+        else
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(16.0),

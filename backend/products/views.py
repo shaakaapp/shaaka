@@ -56,7 +56,19 @@ class VendorProductListView(generics.ListAPIView):
 
     def get_queryset(self):
         vendor_id = self.kwargs['vendor_id']
-        return Product.objects.filter(vendor_id=vendor_id).order_by('-created_at')
+        queryset = Product.objects.filter(vendor_id=vendor_id).order_by('-created_at')
+
+        # Handle Search
+        search_query = self.request.query_params.get('search', None)
+        if search_query:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) | 
+                Q(description__icontains=search_query) |
+                Q(category__icontains=search_query)
+            )
+            
+        return queryset
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
