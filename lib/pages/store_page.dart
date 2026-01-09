@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import '../models/product.dart';
 import '../services/api_service.dart';
 import '../widgets/product_card.dart';
@@ -26,13 +25,12 @@ class _StorePageState extends State<StorePage> {
   List<Product> _products = [];
   bool _isLoading = true;
   String? _error;
-  final TextEditingController _searchController = TextEditingController();
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
 
   Future<void> _loadProducts() async {
     setState(() {
@@ -48,7 +46,7 @@ class _StorePageState extends State<StorePage> {
         }
         
         if (id != null) {
-             result = await ApiService.getVendorProducts(id, query: _searchController.text.trim());
+             result = await ApiService.getVendorProducts(id);
         } else {
             result = {'success': false, 'error': 'User not logged in'};
         }
@@ -74,11 +72,12 @@ class _StorePageState extends State<StorePage> {
 
   @override
   Widget build(BuildContext context) {
-    Widget content;
     if (_isLoading) {
-      content = const Center(child: CircularProgressIndicator());
-    } else if (_error != null) {
-      content = Center(
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -88,8 +87,10 @@ class _StorePageState extends State<StorePage> {
           ],
         ),
       );
-    } else if (_products.isEmpty) {
-      content = Center(
+    }
+
+    if (_products.isEmpty) {
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -99,69 +100,12 @@ class _StorePageState extends State<StorePage> {
           ],
         ),
       );
-    } else {
-      content = RefreshIndicator(
-        onRefresh: _loadProducts,
-        child: GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: _products.length,
-          itemBuilder: (context, index) {
-            return ProductCard(
-              product: _products[index],
-              onTap: () {
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => ProductDetailsPage(product: _products[index]))
-                ).then((_) => _loadProducts());
-              },
-              onEdit: widget.isVendorView ? () {
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => AddProductPage(product: _products[index]))
-                ).then((value) {
-                  if (value == true) _loadProducts();
-                });
-              } : null,
-            );
-          },
-        ),
-      );
     }
 
     return Column(
       children: [
         // Search Header
-        if (widget.isVendorView)
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                    hintText: 'Search your products...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty 
-                        ? IconButton(
-                            icon: const Icon(Icons.clear), 
-                            onPressed: () {
-                                _searchController.clear();
-                                _loadProducts();
-                            }
-                          ) 
-                        : null,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide(color: Colors.grey[300]!)),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0)
-                ),
-                onSubmitted: (_) => _loadProducts(),
-            ),
-          )
-        else
+        if (!widget.isVendorView)
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(16.0),
@@ -189,8 +133,39 @@ class _StorePageState extends State<StorePage> {
             ),
           ),
           
-        // Content Area
-        Expanded(child: content),
+        // Product Grid
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadProducts,
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.7, // Adjust aspect ratio for taller cards with rating
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: _products.length,
+              itemBuilder: (context, index) {
+                return ProductCard(
+                  product: _products[index],
+                  onTap: () {
+                      Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => ProductDetailsPage(product: _products[index]))
+                      ).then((_) => _loadProducts()); // Reload in case rating changed
+                  },
+                  onEdit: widget.isVendorView ? () {
+                       Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => AddProductPage(product: _products[index]))
+                      ).then((value) {
+                           if (value == true) _loadProducts();
+                      });
+                  } : null,
+                );
+              },
+            ),
+          ),
+        ),
       ],
     );
   }

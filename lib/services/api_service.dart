@@ -348,25 +348,20 @@ class ApiService {
     }
   }
 
-  // Get Products by Vendor
-  static Future<Map<String, dynamic>> getVendorProducts(int vendorId, {String? query}) async {
+  // Get Vendor Products
+  static Future<Map<String, dynamic>> getVendorProducts(int vendorId) async {
     try {
-      String url = '$baseUrl/products/vendor/$vendorId/';
-      if (query != null && query.isNotEmpty) {
-        url += '?search=$query';
-      }
-      
       final response = await http.get(
-        Uri.parse(url),
+        Uri.parse('$baseUrl/products/vendor/$vendorId/'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final products = data.map((json) => Product.fromJson(json)).toList();
         return {
           'success': true,
-          'data': (jsonDecode(response.body) as List)
-              .map((data) => Product.fromJson(data))
-              .toList(),
+          'data': products,
         };
       } else {
         return {
