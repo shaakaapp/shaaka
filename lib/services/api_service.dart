@@ -274,6 +274,32 @@ class ApiService {
     }
   }
 
+  // Delete Product
+  static Future<Map<String, dynamic>> deleteProduct(int productId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/products/$productId/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 204) {
+        return {
+          'success': true,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Failed to delete product',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
   // Get All Products (Global Market)
   static Future<Map<String, dynamic>> getProducts({String? query, String? ordering, int? limit}) async {
     try {

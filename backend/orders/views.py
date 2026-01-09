@@ -25,12 +25,16 @@ def add_to_cart(request, user_id):
         cart, created = Cart.objects.get_or_create(user=user)
         
         product_id = request.data.get('product_id')
-        quantity = int(request.data.get('quantity', 1))
+        # Use float for quantity to support decimals (e.g. 0.25 kg)
+        quantity = float(request.data.get('quantity', 1))
         
+        if quantity <= 0:
+             return Response({'error': 'Quantity must be greater than 0'}, status=status.HTTP_400_BAD_REQUEST)
+
         product = get_object_or_404(Product, id=product_id)
         
         # Check stock
-        if product.stock_quantity < quantity:
+        if float(product.stock_quantity) < quantity:
             return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
             
         # Check if user is the vendor
@@ -44,10 +48,13 @@ def add_to_cart(request, user_id):
         )
         
         # If adding more than stock allows (considering already in cart)
-        if cart_item.quantity + quantity > product.stock_quantity:
+        # Convert both to float for comparison to avoid type mismatch if Decimal vs float
+        if float(cart_item.quantity) + quantity > float(product.stock_quantity):
              return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
 
-        cart_item.quantity += quantity
+        # We can add float to Decimal field in Django, but explicit casting or keeping as float is fine for calculation
+        # Django model field is DecimalField, it handles assignment of float/decimals
+        cart_item.quantity = float(cart_item.quantity) + quantity
         cart_item.save()
         
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
@@ -64,12 +71,12 @@ def update_cart_item(request, user_id, item_id):
         cart = Cart.objects.get(user=user)
         cart_item = get_object_or_404(CartItem, id=item_id, cart=cart)
         
-        quantity = int(request.data.get('quantity'))
+        quantity = float(request.data.get('quantity'))
         
         if quantity <= 0:
             cart_item.delete()
         else:
-            if quantity > cart_item.product.stock_quantity:
+            if quantity > float(cart_item.product.stock_quantity):
                 return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
             cart_item.quantity = quantity
             cart_item.save()

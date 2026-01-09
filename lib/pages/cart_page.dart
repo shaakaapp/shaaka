@@ -108,6 +108,16 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
+  double _getStepForUnit(String unit) {
+    unit = unit.toLowerCase();
+    if (unit == 'kg' || unit == 'l' || unit == 'litre' || unit == 'kilogram' || unit == 'liter') {
+      return 0.25; // Increment by 250g/ml
+    } else if (unit == 'g' || unit == 'ml' || unit == 'gram' || unit == 'grams') {
+        return 50.0; // Increment by 50g/ml if unit is grams
+    }
+    return 1.0; // Default
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -193,7 +203,10 @@ class _CartPageState extends State<CartPage> {
                                               children: [
                                                 IconButton(
                                                   icon: const Icon(Icons.remove_circle_outline),
-                                                  onPressed: () => _updateQuantity(item, item.quantity - 1.0),
+                                                  onPressed: () {
+                                                      double step = _getStepForUnit(item.unit);
+                                                      _updateQuantity(item, item.quantity - step);
+                                                  },
                                                   padding: EdgeInsets.zero,
                                                   constraints: const BoxConstraints(),
                                                 ),
@@ -203,7 +216,10 @@ class _CartPageState extends State<CartPage> {
                                                 ),
                                                 IconButton(
                                                   icon: const Icon(Icons.add_circle_outline),
-                                                  onPressed: () => _updateQuantity(item, item.quantity + 1.0),
+                                                  onPressed: () {
+                                                      double step = _getStepForUnit(item.unit);
+                                                      _updateQuantity(item, item.quantity + step);
+                                                  },
                                                   padding: EdgeInsets.zero,
                                                   constraints: const BoxConstraints(),
                                                 ),

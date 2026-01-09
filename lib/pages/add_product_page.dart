@@ -324,10 +324,68 @@ class _AddProductPageState extends State<AddProductPage> {
                     ? const CircularProgressIndicator()
                     : Text(widget.product != null ? 'Update Product' : 'Add Product'),
               ),
+              if (widget.product != null) ...[
+                const SizedBox(height: 16),
+                OutlinedButton(
+                  onPressed: _isLoading ? null : _confirmDelete,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: Colors.red),
+                    foregroundColor: Colors.red,
+                  ),
+                  child: const Text('Delete Product'),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Product'),
+        content: const Text('Are you sure you want to delete this product? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteProduct();
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteProduct() async {
+    setState(() => _isLoading = true);
+
+    final result = await ApiService.deleteProduct(widget.product!.id);
+
+    setState(() => _isLoading = false);
+
+    if (result['success'] == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Product Deleted Successfully!'),
+          backgroundColor: Colors.green));
+      Navigator.pop(context, true); // Return true to refresh list
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(result['error'] is Map
+                ? (result['error']['error'] ?? 'Failed to delete product')
+                : result['error'].toString()),
+            backgroundColor: Colors.red));
+      }
+    }
   }
 }
