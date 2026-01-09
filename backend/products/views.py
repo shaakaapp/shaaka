@@ -10,7 +10,9 @@ class ProductListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
 
     def get_queryset(self):
-        queryset = Product.objects.all().order_by('-created_at')
+        queryset = Product.objects.all()
+        
+        # Handle Search
         search_query = self.request.query_params.get('search', None)
         if search_query:
             from django.db.models import Q
@@ -19,6 +21,14 @@ class ProductListCreateView(generics.ListCreateAPIView):
                 Q(description__icontains=search_query) |
                 Q(category__icontains=search_query)
             )
+
+        # Handle Ordering
+        ordering = self.request.query_params.get('ordering', '-created_at')
+        if ordering in ['-rating_count', '-average_rating', 'price', '-price', '-created_at']:
+            queryset = queryset.order_by(ordering)
+        else:
+            queryset = queryset.order_by('-created_at')
+            
         return queryset
 
     def create(self, request, *args, **kwargs):

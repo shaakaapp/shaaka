@@ -275,12 +275,22 @@ class ApiService {
   }
 
   // Get All Products (Global Market)
-  static Future<Map<String, dynamic>> getProducts({String? query}) async {
+  static Future<Map<String, dynamic>> getProducts({String? query, String? ordering, int? limit}) async {
     try {
       String url = '$baseUrl/products/';
+      Map<String, String> queryParams = {};
+      
       if (query != null && query.isNotEmpty) {
-        url += '?search=${Uri.encodeComponent(query)}';
+        queryParams['search'] = query;
       }
+      if (ordering != null) {
+        queryParams['ordering'] = ordering;
+      }
+      
+      if (queryParams.isNotEmpty) {
+        url += '?${Uri(queryParameters: queryParams).query}';
+      }
+
       final response = await http.get(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
@@ -288,7 +298,12 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final products = data.map((json) => Product.fromJson(json)).toList();
+        List<Product> products = data.map((json) => Product.fromJson(json)).toList();
+        
+        if (limit != null && products.length > limit) {
+          products = products.sublist(0, limit);
+        }
+        
         return {
           'success': true,
           'data': products,
