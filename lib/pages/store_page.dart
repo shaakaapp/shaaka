@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../models/product.dart';
 import '../services/api_service.dart';
 import '../widgets/product_card.dart';
@@ -26,18 +27,12 @@ class _StorePageState extends State<StorePage> {
   bool _isLoading = true;
   String? _error;
   final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProducts();
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
+
 
   Future<void> _loadProducts() async {
     setState(() {
@@ -79,12 +74,11 @@ class _StorePageState extends State<StorePage> {
 
   @override
   Widget build(BuildContext context) {
+    Widget content;
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return Center(
+      content = const Center(child: CircularProgressIndicator());
+    } else if (_error != null) {
+      content = Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -94,10 +88,8 @@ class _StorePageState extends State<StorePage> {
           ],
         ),
       );
-    }
-
-    if (_products.isEmpty) {
-      return Center(
+    } else if (_products.isEmpty) {
+      content = Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -107,11 +99,41 @@ class _StorePageState extends State<StorePage> {
           ],
         ),
       );
+    } else {
+      content = RefreshIndicator(
+        onRefresh: _loadProducts,
+        child: GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: _products.length,
+          itemBuilder: (context, index) {
+            return ProductCard(
+              product: _products[index],
+              onTap: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => ProductDetailsPage(product: _products[index]))
+                ).then((_) => _loadProducts());
+              },
+              onEdit: widget.isVendorView ? () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => AddProductPage(product: _products[index]))
+                ).then((value) {
+                  if (value == true) _loadProducts();
+                });
+              } : null,
+            );
+          },
+        ),
+      );
     }
 
     return Column(
       children: [
-        // Search Header
         // Search Header
         if (widget.isVendorView)
           Container(
@@ -167,39 +189,8 @@ class _StorePageState extends State<StorePage> {
             ),
           ),
           
-        // Product Grid
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadProducts,
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.7, // Adjust aspect ratio for taller cards with rating
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: _products.length,
-              itemBuilder: (context, index) {
-                return ProductCard(
-                  product: _products[index],
-                  onTap: () {
-                      Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => ProductDetailsPage(product: _products[index]))
-                      ).then((_) => _loadProducts()); // Reload in case rating changed
-                  },
-                  onEdit: widget.isVendorView ? () {
-                       Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => AddProductPage(product: _products[index]))
-                      ).then((value) {
-                           if (value == true) _loadProducts();
-                      });
-                  } : null,
-                );
-              },
-            ),
-          ),
-        ),
+        // Content Area
+        Expanded(child: content),
       ],
     );
   }

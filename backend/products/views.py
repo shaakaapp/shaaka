@@ -10,7 +10,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
 
     def get_queryset(self):
-        queryset = Product.objects.all()
+        queryset = Product.objects.select_related('vendor').prefetch_related('images').all()
         
         # Handle Search
         search_query = self.request.query_params.get('search', None)
@@ -56,7 +56,7 @@ class VendorProductListView(generics.ListAPIView):
 
     def get_queryset(self):
         vendor_id = self.kwargs['vendor_id']
-        queryset = Product.objects.filter(vendor_id=vendor_id).order_by('-created_at')
+        queryset = Product.objects.select_related('vendor').prefetch_related('images').filter(vendor_id=vendor_id).order_by('-created_at')
 
         # Handle Search
         search_query = self.request.query_params.get('search', None)
@@ -71,7 +71,7 @@ class VendorProductListView(generics.ListAPIView):
         return queryset
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.select_related('vendor').prefetch_related('images').all()
     serializer_class = ProductSerializer
 
     def update(self, request, *args, **kwargs):
