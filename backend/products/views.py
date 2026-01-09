@@ -12,7 +12,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         from django.db.models import Count
         # Annotate with number of times ordered
-        queryset = Product.objects.annotate(order_count=Count('orderitem')).all()
+        queryset = Product.objects.annotate(order_count=Count('orderitem_set')).all()
         
         # Handle Search
         search_query = self.request.query_params.get('search', None)
