@@ -67,7 +67,7 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
-  Future<void> _updateQuantity(CartItem item, int newQuantity) async {
+  Future<void> _updateQuantity(CartItem item, double newQuantity) async {
     if (newQuantity < 0) return;
 
     // Optimistic update? No, let's wait for server to be safe
@@ -193,17 +193,17 @@ class _CartPageState extends State<CartPage> {
                                               children: [
                                                 IconButton(
                                                   icon: const Icon(Icons.remove_circle_outline),
-                                                  onPressed: () => _updateQuantity(item, item.quantity - 1),
+                                                  onPressed: () => _updateQuantity(item, item.quantity - 1.0),
                                                   padding: EdgeInsets.zero,
                                                   constraints: const BoxConstraints(),
                                                 ),
                                                 Padding(
                                                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                                                  child: Text('${item.quantity}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                                  child: Text('${item.quantity % 1 == 0 ? item.quantity.toInt() : item.quantity}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                                 ),
                                                 IconButton(
                                                   icon: const Icon(Icons.add_circle_outline),
-                                                  onPressed: () => _updateQuantity(item, item.quantity + 1),
+                                                  onPressed: () => _updateQuantity(item, item.quantity + 1.0),
                                                   padding: EdgeInsets.zero,
                                                   constraints: const BoxConstraints(),
                                                 ),

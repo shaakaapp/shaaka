@@ -5,7 +5,7 @@ class CartItem {
   final String? productImageUrl;
   final double price;
   final String unit;
-  int quantity;
+  double quantity;
   final double totalPrice;
 
   CartItem({
@@ -33,7 +33,7 @@ class CartItem {
       productImageUrl: imageUrl,
       price: double.parse(product['price'].toString()),
       unit: product['unit'],
-      quantity: json['quantity'],
+      quantity: double.parse(json['quantity'].toString()),
       totalPrice: double.parse(json['total_price'].toString()),
     );
   }
@@ -65,7 +65,7 @@ class OrderItem {
   final int id;
   final int? productId; // Nullable if product deleted
   final String productName;
-  final int quantity;
+  final double quantity;
   final double priceAtPurchase;
 
   OrderItem({
@@ -81,7 +81,7 @@ class OrderItem {
       id: json['id'],
       productId: json['product'] != null ? json['product']['id'] : null,
       productName: json['product_name'],
-      quantity: json['quantity'],
+      quantity: double.parse(json['quantity'].toString()),
       priceAtPurchase: double.parse(json['price_at_purchase'].toString()),
     );
   }

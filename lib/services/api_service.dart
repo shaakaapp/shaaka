@@ -499,7 +499,7 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> addToCart(int userId, int productId, int quantity) async {
+  static Future<Map<String, dynamic>> addToCart(int userId, int productId, double quantity) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/cart/$userId/add/'),
@@ -529,7 +529,7 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> updateCartItem(int userId, int itemId, int quantity) async {
+  static Future<Map<String, dynamic>> updateCartItem(int userId, int itemId, double quantity) async {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/cart/$userId/update/$itemId/'),

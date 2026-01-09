@@ -6,7 +6,8 @@ import '../models/cart_order_models.dart';
 import 'order_detail_page.dart';
 
 class MyOrdersPage extends StatefulWidget {
-  const MyOrdersPage({super.key});
+  final bool showBackButton;
+  const MyOrdersPage({super.key, this.showBackButton = false});
 
   @override
   State<MyOrdersPage> createState() => _MyOrdersPageState();
@@ -54,7 +55,18 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Orders')),
+      appBar: AppBar(
+        title: const Text('My Orders'),
+        automaticallyImplyLeading: false, // customized leading override
+        leading: widget.showBackButton 
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                   Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+              )
+            : null,
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _orders.isEmpty

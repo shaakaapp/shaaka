@@ -34,7 +34,7 @@ class Product(models.Model):
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     unit = models.CharField(max_length=50)
-    stock_quantity = models.IntegerField(default=0)
+    stock_quantity = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     
     # Denormalized rating fields for performance
     average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)

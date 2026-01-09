@@ -173,10 +173,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog
                 Navigator.of(context).pop(); // Close Checkout
-                Navigator.of(context).pop(); // Close Cart
+                // Navigator.of(context).pop(); // REMOVED: Do not close Cart, let MyOrders sit on top of Home/Cart
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const MyOrdersPage()),
+                  MaterialPageRoute(builder: (context) => const MyOrdersPage(showBackButton: true)),
                 );
               },
               child: const Text('Go to My Orders'),

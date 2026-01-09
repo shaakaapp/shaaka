@@ -31,7 +31,8 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return ConnectivityWrapper(child: child!);
       },
-      initialRoute: '/login',
+      // initialRoute: '/login', // REMOVED
+      home: const AuthCheck(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
