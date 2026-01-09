@@ -132,15 +132,24 @@ class _ProductCardState extends State<ProductCard> {
                           ),
                         ),
                         if (widget.onEdit != null)
-                          SizedBox(
-                            height: 30,
-                            width: 30,
-                            child: IconButton(
-                              icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
-                              onPressed: widget.onEdit,
-                              padding: EdgeInsets.zero,
-                              style: IconButton.styleFrom(backgroundColor: Colors.blue[50]),
-                            ),
+                          Row(
+                              children: [
+                                  Text(
+                                      'Stock: ${widget.product.stockQuantity % 1 == 0 ? widget.product.stockQuantity.toInt() : widget.product.stockQuantity}',
+                                      style: TextStyle(fontSize: 12, color: widget.product.stockQuantity > 0 ? Colors.black : Colors.red),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    height: 30,
+                                    width: 30,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
+                                      onPressed: widget.onEdit,
+                                      padding: EdgeInsets.zero,
+                                      style: IconButton.styleFrom(backgroundColor: Colors.blue[50]),
+                                    ),
+                                  ),
+                              ],
                           )
                         else if (widget.product.stockQuantity == 0)
                           const Text('Out of Stock',

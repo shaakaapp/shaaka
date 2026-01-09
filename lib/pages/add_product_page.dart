@@ -60,6 +60,7 @@ class _AddProductPageState extends State<AddProductPage> {
     'bunch'
   ];
 
+  final List<String> _existingImageUrls = [];
   final List<XFile> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
 
@@ -76,6 +77,11 @@ class _AddProductPageState extends State<AddProductPage> {
       // Ensure category exists in list, else default or add
       if (_categories.contains(widget.product!.category)) {
         _selectedCategory = widget.product!.category;
+      }
+      
+      // Load existing images
+      for (var img in widget.product!.images) {
+          _existingImageUrls.add(img.imageUrl);
       }
     }
   }
@@ -104,10 +110,16 @@ class _AddProductPageState extends State<AddProductPage> {
     });
   }
 
+  void _removeExistingImage(int index) {
+    setState(() {
+      _existingImageUrls.removeAt(index);
+    });
+  }
+
   Future<void> _addProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedImages.isEmpty && widget.product == null) {
+    if (_selectedImages.isEmpty && _existingImageUrls.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please add at least one image')));
       return;
@@ -126,11 +138,11 @@ class _AddProductPageState extends State<AddProductPage> {
     }
 
     // 1. Upload Images First
-    List<String> imageUrls = [];
+    List<String> newImageUrls = [];
     for (var image in _selectedImages) {
       final uploadResult = await ApiService.uploadImage(image, type: 'product');
       if (uploadResult['success'] == true) {
-        imageUrls.add(uploadResult['url']);
+        newImageUrls.add(uploadResult['url']);
       } else {
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -141,6 +153,9 @@ class _AddProductPageState extends State<AddProductPage> {
       }
     }
 
+    // Combine existing and new images
+    final allImageUrls = [..._existingImageUrls, ...newImageUrls];
+
     // 2. Add Product with Image URLs
     final productData = {
       'vendor': userId,
@@ -148,9 +163,9 @@ class _AddProductPageState extends State<AddProductPage> {
       'category': _selectedCategory,
       'price': double.parse(_priceController.text.trim()),
       'unit': _selectedUnit,
-      'stock_quantity': int.parse(_stockController.text.trim()),
+      'stock_quantity': double.parse(_stockController.text.trim()),
       'description': _descriptionController.text.trim(),
-      'images': imageUrls,
+      'images': allImageUrls,
     };
 
     Map<String, dynamic> result;
@@ -241,10 +256,10 @@ class _AddProductPageState extends State<AddProductPage> {
               
               TextFormField(
                 controller: _stockController,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                     labelText: 'Stock Quantity *', border: OutlineInputBorder()),
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                // inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*'))], // Optional: strict regex
                 validator: (val) =>
                     val == null || val.isEmpty ? 'Required' : null,
               ),
@@ -261,57 +276,100 @@ class _AddProductPageState extends State<AddProductPage> {
               ),
               const SizedBox(height: 24),
               
-              // Image Picker UI
-              const Text('Product Images *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              // Image Picker
+              const Text('Images', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               SizedBox(
                 height: 100,
-                child: ListView.builder(
+                child: ListView(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _selectedImages.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == _selectedImages.length) {
-                      return GestureDetector(
-                        onTap: _pickImages,
-                        child: Container(
-                          width: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey),
+                  children: [
+                    // Existing Images
+                    ..._existingImageUrls.asMap().entries.map((entry) {
+                      int idx = entry.key;
+                      String url = entry.value;
+                      return Stack(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(url, fit: BoxFit.cover)),
                           ),
-                          child: const Icon(Icons.add_a_photo, color: Colors.grey),
-                        ),
+                          Positioned(
+                            top: 0,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () => _removeExistingImage(idx),
+                              child: const CircleAvatar(
+                                radius: 10,
+                                backgroundColor: Colors.red,
+                                child: Icon(Icons.close,
+                                    size: 16, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
                       );
-                    }
-                     return Stack(
-                      children: [
-                        Container(
-                          width: 100,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            image: DecorationImage(
-                              image: FileImage(File(_selectedImages[index].path)),
-                              fit: BoxFit.cover,
+                    }).toList(),
+                    
+                    // New Selected Images
+                    ..._selectedImages.asMap().entries.map((entry) {
+                      int idx = entry.key;
+                      XFile file = entry.value;
+                      return Stack(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(File(file.path), fit: BoxFit.cover)),
+                          ),
+                          Positioned(
+                            top: 0,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () => _removeImage(idx),
+                              child: const CircleAvatar(
+                                radius: 10,
+                                backgroundColor: Colors.red,
+                                child: Icon(Icons.close,
+                                    size: 16, color: Colors.white),
+                              ),
                             ),
                           ),
+                        ],
+                      );
+                    }).toList(),
+                    
+                    // Add Button
+                    GestureDetector(
+                      onTap: _pickImages,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey),
                         ),
-                        Positioned(
-                          right: 4,
-                          top: 4,
-                          child: GestureDetector(
-                            onTap: () => _removeImage(index),
-                            child: const CircleAvatar(
-                              radius: 10,
-                              backgroundColor: Colors.red,
-                              child: Icon(Icons.close, size: 14, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                        child: const Icon(Icons.add_a_photo,
+                            size: 40, color: Colors.grey),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               

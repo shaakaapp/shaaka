@@ -69,19 +69,23 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        # Handle Images Update
-        # For simplicity, if 'images' is provided, we can append them. 
-        # Or if we want to replace/delete, we'd need more logic.
-        # Let's assume we just append new images for now or clients send a list to ADD.
-        # User requested "option to edit", usually implies changing details.
-        # Handling full image management might be complex (deleting individual images).
-        # Let's support adding new images via the same 'images' list of URLs key.
-        images_data = request.data.get('images', []) 
-        if images_data:
-            for img_url in images_data:
-                 # Check if already exists to avoid duplicates if client sends all
-                if not ProductImage.objects.filter(product=instance, image_url=img_url).exists():
-                    ProductImage.objects.create(product=instance, image_url=img_url)
+        # Handle Images Sync
+        # The 'images' list in the request is treated as the definitive list.
+        # 1. Identify existing images in DB
+        current_images = {img.image_url: img for img in ProductImage.objects.filter(product=instance)}
+        
+        # 2. Get incoming list of URLs (both kept existing ones and new ones)
+        incoming_urls = request.data.get('images', [])
+        
+        # 3. Determine deletions (In DB but not in incoming list)
+        for url, img_obj in current_images.items():
+            if url not in incoming_urls:
+                img_obj.delete()
+                
+        # 4. Determine additions (In incoming list but not in DB)
+        for url in incoming_urls:
+            if url not in current_images:
+                ProductImage.objects.create(product=instance, image_url=url)
 
         if getattr(instance, '_prefetched_objects_cache', None):
             # If 'prefetch_related' has been applied to a queryset, we need to

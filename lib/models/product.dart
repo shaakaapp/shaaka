@@ -50,7 +50,7 @@ class Product {
   final String category;
   final double price;
   final String unit;
-  final int stockQuantity;
+  final double stockQuantity;
   final double averageRating;
   final int ratingCount;
   final List<ProductImage> images;
@@ -80,7 +80,7 @@ class Product {
       category: json['category'] ?? '',
       price: double.tryParse(json['price'].toString()) ?? 0.0,
       unit: json['unit'] ?? '',
-      stockQuantity: int.tryParse(double.tryParse(json['stock_quantity'].toString())?.toInt().toString() ?? '0') ?? 0,
+      stockQuantity: double.tryParse(json['stock_quantity'].toString()) ?? 0.0,
       averageRating: double.tryParse(json['average_rating'].toString()) ?? 0.0,
       ratingCount: int.tryParse(json['rating_count'].toString()) ?? 0,
       images: (json['images'] as List?)
