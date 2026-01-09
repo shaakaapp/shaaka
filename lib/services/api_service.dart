@@ -544,7 +544,7 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> addToCart(int userId, int productId, double quantity) async {
+  static Future<Map<String, dynamic>> addToCart(int userId, int productId, double unitValue, {int quantity = 1}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/cart/$userId/add/'),
@@ -552,6 +552,7 @@ class ApiService {
         body: jsonEncode({
           'product_id': productId,
           'quantity': quantity,
+          'unit_value': unitValue,
         }),
       );
 

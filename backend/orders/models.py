@@ -19,17 +19,18 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.DecimalField(max_digits=10, decimal_places=3, default=1)
+    unit_value = models.DecimalField(max_digits=10, decimal_places=3, default=1.000)
     added_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        unique_together = ('cart', 'product')
+        unique_together = ('cart', 'product', 'unit_value')
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
 
     @property
     def total_price(self):
-        return self.quantity * self.product.price
+        return self.quantity * self.unit_value * self.product.price
 
 class Order(models.Model):
     STATUS_CHOICES = [

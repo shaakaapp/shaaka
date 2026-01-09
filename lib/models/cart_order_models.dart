@@ -5,7 +5,8 @@ class CartItem {
   final String? productImageUrl;
   final double price;
   final String unit;
-  double quantity;
+  double quantity; // This is now Count
+  final double unitValue; // This is size (e.g. 0.25)
   final double totalPrice;
 
   CartItem({
@@ -16,6 +17,7 @@ class CartItem {
     required this.price,
     required this.unit,
     required this.quantity,
+    required this.unitValue,
     required this.totalPrice,
   });
 
@@ -34,7 +36,8 @@ class CartItem {
       price: double.parse(product['price'].toString()),
       unit: product['unit'],
       quantity: double.parse(json['quantity'].toString()),
-      totalPrice: double.parse(json['total_price'].toString()),
+      unitValue: double.parse(json['unit_value'].toString()),
+      totalPrice: double.parse(json['total_price'].toString()), // Trust backend total
     );
   }
 }

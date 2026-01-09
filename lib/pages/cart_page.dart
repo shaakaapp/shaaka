@@ -108,15 +108,7 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
-  double _getStepForUnit(String unit) {
-    unit = unit.toLowerCase();
-    if (unit == 'kg' || unit == 'l' || unit == 'litre' || unit == 'kilogram' || unit == 'liter') {
-      return 0.25; // Increment by 250g/ml
-    } else if (unit == 'g' || unit == 'ml' || unit == 'gram' || unit == 'grams') {
-        return 50.0; // Increment by 50g/ml if unit is grams
-    }
-    return 1.0; // Default
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -193,9 +185,16 @@ class _CartPageState extends State<CartPage> {
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             Text(
-                                              '₹${item.price.toStringAsFixed(2)} / ${item.unit}',
+                                              'Size: ${item.unitValue < 1 && (item.unit == "kg" || item.unit == "l") ? "${(item.unitValue * 1000).toInt()}${item.unit == "kg" ? "g" : "ml"}" : "${item.unitValue} ${item.unit}"}',
                                               style: TextStyle(
                                                 color: Colors.grey[600],
+                                              ),
+                                            ),
+                                            Text(
+                                              '₹${item.totalPrice.toStringAsFixed(2)}',
+                                              style: TextStyle(
+                                                color: Colors.green[800],
+                                                fontWeight: FontWeight.bold
                                               ),
                                             ),
                                             const SizedBox(height: 8),
@@ -204,21 +203,19 @@ class _CartPageState extends State<CartPage> {
                                                 IconButton(
                                                   icon: const Icon(Icons.remove_circle_outline),
                                                   onPressed: () {
-                                                      double step = _getStepForUnit(item.unit);
-                                                      _updateQuantity(item, item.quantity - step);
+                                                      _updateQuantity(item, item.quantity - 1.0);
                                                   },
                                                   padding: EdgeInsets.zero,
                                                   constraints: const BoxConstraints(),
                                                 ),
                                                 Padding(
                                                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                                                  child: Text('${item.quantity % 1 == 0 ? item.quantity.toInt() : item.quantity}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                                  child: Text('${item.quantity.toInt()}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                                 ),
                                                 IconButton(
                                                   icon: const Icon(Icons.add_circle_outline),
                                                   onPressed: () {
-                                                      double step = _getStepForUnit(item.unit);
-                                                      _updateQuantity(item, item.quantity + step);
+                                                      _updateQuantity(item, item.quantity + 1.0);
                                                   },
                                                   padding: EdgeInsets.zero,
                                                   constraints: const BoxConstraints(),

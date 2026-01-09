@@ -25,35 +25,40 @@ def add_to_cart(request, user_id):
         cart, created = Cart.objects.get_or_create(user=user)
         
         product_id = request.data.get('product_id')
-        # Use float for quantity to support decimals (e.g. 0.25 kg)
-        quantity = float(request.data.get('quantity', 1))
+        # quantity is now "Count" (number of packs)
+        quantity = int(request.data.get('quantity', 1))
+        # unit_value is the size of the pack (e.g. 0.25 for 250g)
+        unit_value = float(request.data.get('unit_value', 1.0))
         
         if quantity <= 0:
              return Response({'error': 'Quantity must be greater than 0'}, status=status.HTTP_400_BAD_REQUEST)
 
         product = get_object_or_404(Product, id=product_id)
         
-        # Check stock
-        if float(product.stock_quantity) < quantity:
+        # Check stock for the requested amount
+        required_stock = quantity * unit_value
+        if float(product.stock_quantity) < required_stock:
             return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
             
         # Check if user is the vendor
         if product.vendor == user:
             return Response({'error': 'You cannot add your own product to cart'}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Get or create item based on Product AND Unit Value
         cart_item, item_created = CartItem.objects.get_or_create(
             cart=cart, 
             product=product,
+            unit_value=unit_value,
             defaults={'quantity': 0}
         )
         
-        # If adding more than stock allows (considering already in cart)
-        # Convert both to float for comparison to avoid type mismatch if Decimal vs float
-        if float(cart_item.quantity) + quantity > float(product.stock_quantity):
+        # Check total stock including current cart
+        # quantity in cart_item is now Count
+        current_total_stock_needed = (float(cart_item.quantity) + quantity) * unit_value
+        
+        if current_total_stock_needed > float(product.stock_quantity):
              return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # We can add float to Decimal field in Django, but explicit casting or keeping as float is fine for calculation
-        # Django model field is DecimalField, it handles assignment of float/decimals
         cart_item.quantity = float(cart_item.quantity) + quantity
         cart_item.save()
         
@@ -71,12 +76,15 @@ def update_cart_item(request, user_id, item_id):
         cart = Cart.objects.get(user=user)
         cart_item = get_object_or_404(CartItem, id=item_id, cart=cart)
         
+        # Update Quantity (Count)
         quantity = float(request.data.get('quantity'))
         
         if quantity <= 0:
             cart_item.delete()
         else:
-            if quantity > float(cart_item.product.stock_quantity):
+            # Check stock: Count * Unit Value
+            required_stock = quantity * float(cart_item.unit_value)
+            if required_stock > float(cart_item.product.stock_quantity):
                 return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
             cart_item.quantity = quantity
             cart_item.save()
@@ -142,19 +150,23 @@ def place_order(request, user_id):
         
         # Move items to Order Items and Deduct Stock
         for item in cart.items.all():
-            if item.quantity > item.product.stock_quantity:
+            # Total quantity to deduct = Count * Unit Value
+            deduction_quantity = item.quantity * item.unit_value
+            
+            if deduction_quantity > item.product.stock_quantity:
                 raise Exception(f"Not enough stock for {item.product.name}")
             
             OrderItem.objects.create(
                 order=order,
                 product=item.product,
                 product_name=item.product.name,
-                quantity=item.quantity,
+                # Store total quantity for record
+                quantity=deduction_quantity, 
                 price_at_purchase=item.product.price
             )
             
             # Update Stock
-            item.product.stock_quantity -= item.quantity
+            item.product.stock_quantity -= deduction_quantity
             item.product.save()
         
         # Clear Cart

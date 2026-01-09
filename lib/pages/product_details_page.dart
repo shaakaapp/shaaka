@@ -324,14 +324,15 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Future<void> _checkCart() async {
     if (_currentUserId == null) return;
     
-    // We don't want to show loading spinner for cart check as it might be secondary
-    // But we need to know if item is in cart
     final result = await ApiService.getCart(_currentUserId!);
     if (mounted && result['success'] == true) {
       final Cart cart = result['data'];
       try {
         setState(() {
-          _cartItem = cart.items.firstWhere((item) => item.productId == _product.id);
+          // Check for exact product AND unit value match
+          _cartItem = cart.items.firstWhere((item) => 
+              item.productId == _product.id && item.unitValue == _quantityStep
+          );
         });
       } catch (e) {
         setState(() => _cartItem = null);
@@ -349,7 +350,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
     setState(() => _isLoadingCart = true);
 
-    final result = await ApiService.addToCart(userId, _product.id, _quantityStep); 
+    // Pass unitValue and default quantity 1 (count)
+    final result = await ApiService.addToCart(userId, _product.id, _quantityStep, quantity: 1); 
 
     setState(() => _isLoadingCart = false);
 
@@ -357,7 +359,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       if (result['success'] == true) {
         final Cart cart = result['data'];
         setState(() {
-           _cartItem = cart.items.firstWhere((item) => item.productId == _product.id);
+           _cartItem = cart.items.firstWhere((item) => 
+               item.productId == _product.id && item.unitValue == _quantityStep
+           );
         });
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to Cart!'), backgroundColor: Colors.green));
       } else {
@@ -374,14 +378,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       double currentQty = _cartItem!.quantity;
       double newQty;
       
+      // Increment COUNT by 1
       if (increment) {
-          newQty = currentQty + _quantityStep;
+          newQty = currentQty + 1.0;
       } else {
-          newQty = currentQty - _quantityStep;
+          newQty = currentQty - 1.0;
       }
       
-      newQty = double.parse(newQty.toStringAsFixed(3));
-
       if (newQty <= 0) {
           // Remove item
           final result = await ApiService.removeFromCart(_currentUserId!, _cartItem!.id);
@@ -402,7 +405,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   final Cart cart = result['data'];
                    setState(() {
                        try {
-                        _cartItem = cart.items.firstWhere((item) => item.productId == _product.id);
+                        _cartItem = cart.items.firstWhere((item) => 
+                            item.productId == _product.id && item.unitValue == _quantityStep
+                        );
                        } catch (e) {
                          _cartItem = null;
                        }
@@ -466,7 +471,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                              ],
                            ),
                            // Unit Selector
-                           DropdownButton<double>(
+                             DropdownButton<double>(
                              value: _quantityStep,
                              items: _variants.map((v) {
                                return DropdownMenuItem<double>(
@@ -480,6 +485,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                    _quantityStep = value;
                                    _selectedUnitName = _variants.firstWhere((v) => v['step'] == value)['name'];
                                  });
+                                 _checkCart();
                                }
                              },
                            ),
