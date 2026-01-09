@@ -56,8 +56,8 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _loadTrendingProducts() async {
-    // Fetch top ordered products as "Trending"
-    final result = await ApiService.getProducts(ordering: '-order_count', limit: 6);
+    // Fetch top rated products as "Trending"
+    final result = await ApiService.getProducts(ordering: '-rating_count', limit: 6);
     if (mounted) {
       setState(() {
         _isLoadingTrending = false;

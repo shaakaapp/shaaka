@@ -94,59 +94,43 @@ class _ProductCardState extends State<ProductCard> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
-                          child: Text(
-                            widget.product.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(height: 4), // Reduced spacing
                         Text(
-                          '${widget.product.vendorName} • ${widget.product.ratingCount} reviews',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                          widget.product.name,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Text(
-                              '₹${widget.product.price}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '/${widget.product.unit}',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 11),
-                            ),
-                            const Spacer(),
-                            // Rating badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    widget.product.averageRating.toString(),
-                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(width: 2),
-                                  const Icon(Icons.star, size: 10, color: Colors.white),
-                                ],
-                              ),
-                            ),
-                          ],
+                         const SizedBox(height: 2),
+                        Text(
+                           widget.product.vendorName,
+                           style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                           maxLines: 1,
+                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end, // Align buttons to the end
+                        children: [
+                           const Icon(Icons.star, size: 14, color: Colors.amber),
+                           const SizedBox(width: 2),
+                           Text(
+                               '${widget.product.averageRating} (${widget.product.ratingCount})',
+                               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                           )
+                        ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Text(
+                          '₹${widget.product.price}/${widget.product.unit}',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                         if (widget.onEdit != null)
                           SizedBox(
                             height: 30,
