@@ -10,7 +10,9 @@ class ProductListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
 
     def get_queryset(self):
-        queryset = Product.objects.all()
+        from django.db.models import Count
+        # Annotate with number of times ordered
+        queryset = Product.objects.annotate(order_count=Count('orderitem')).all()
         
         # Handle Search
         search_query = self.request.query_params.get('search', None)
@@ -24,7 +26,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
         # Handle Ordering
         ordering = self.request.query_params.get('ordering', '-created_at')
-        if ordering in ['-rating_count', '-average_rating', 'price', '-price', '-created_at']:
+        if ordering in ['-rating_count', '-average_rating', 'price', '-price', '-created_at', 'order_count', '-order_count']:
             queryset = queryset.order_by(ordering)
         else:
             queryset = queryset.order_by('-created_at')
