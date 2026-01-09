@@ -5,6 +5,7 @@ import '../widgets/product_card.dart';
 import '../services/storage_service.dart';
 import 'product_details_page.dart';
 import 'add_product_page.dart';
+import 'search_page.dart';
 
 class StorePage extends StatefulWidget {
   final bool isVendorView;
@@ -101,35 +102,71 @@ class _StorePageState extends State<StorePage> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadProducts,
-      child: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.7, // Adjust aspect ratio for taller cards with rating
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: _products.length,
-        itemBuilder: (context, index) {
-          return ProductCard(
-            product: _products[index],
-            onTap: () {
+    return Column(
+      children: [
+        // Search Header
+        if (!widget.isVendorView)
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(16.0),
+            child: GestureDetector(
+              onTap: () {
                 Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => ProductDetailsPage(product: _products[index]))
-                ).then((_) => _loadProducts()); // Reload in case rating changed
-            },
-            onEdit: widget.isVendorView ? () {
-                 Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => AddProductPage(product: _products[index]))
-                ).then((value) {
-                     if (value == true) _loadProducts();
-                });
-            } : null,
-          );
-        },
-      ),
+                  MaterialPageRoute(builder: (context) => const SearchPage()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.search, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text('Search for products...', style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+        // Product Grid
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadProducts,
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.7, // Adjust aspect ratio for taller cards with rating
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: _products.length,
+              itemBuilder: (context, index) {
+                return ProductCard(
+                  product: _products[index],
+                  onTap: () {
+                      Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => ProductDetailsPage(product: _products[index]))
+                      ).then((_) => _loadProducts()); // Reload in case rating changed
+                  },
+                  onEdit: widget.isVendorView ? () {
+                       Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => AddProductPage(product: _products[index]))
+                      ).then((value) {
+                           if (value == true) _loadProducts();
+                      });
+                  } : null,
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

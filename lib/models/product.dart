@@ -72,17 +72,17 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'],
-      vendorId: json['vendor'],
+      id: int.tryParse(json['id'].toString()) ?? 0,
+      vendorId: int.tryParse(json['vendor'].toString()) ?? 0,
       vendorName: json['vendor_name'] ?? 'Unknown Vendor',
-      name: json['name'],
+      name: json['name'] ?? '',
       description: json['description'],
-      category: json['category'],
-      price: double.parse(json['price'].toString()),
-      unit: json['unit'],
-      stockQuantity: json['stock_quantity'],
-      averageRating: double.parse(json['average_rating'].toString()),
-      ratingCount: json['rating_count'],
+      category: json['category'] ?? '',
+      price: double.tryParse(json['price'].toString()) ?? 0.0,
+      unit: json['unit'] ?? '',
+      stockQuantity: int.tryParse(double.tryParse(json['stock_quantity'].toString())?.toInt().toString() ?? '0') ?? 0,
+      averageRating: double.tryParse(json['average_rating'].toString()) ?? 0.0,
+      ratingCount: int.tryParse(json['rating_count'].toString()) ?? 0,
       images: (json['images'] as List?)
               ?.map((i) => ProductImage.fromJson(i))
               .toList() ??

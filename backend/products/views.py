@@ -7,8 +7,19 @@ from .serializers import ProductSerializer, ProductReviewSerializer
 from users.models import UserProfile
 
 class ProductListCreateView(generics.ListCreateAPIView):
-    queryset = Product.objects.all().order_by('-created_at')
     serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        queryset = Product.objects.all().order_by('-created_at')
+        search_query = self.request.query_params.get('search', None)
+        if search_query:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) | 
+                Q(description__icontains=search_query) |
+                Q(category__icontains=search_query)
+            )
+        return queryset
 
     def create(self, request, *args, **kwargs):
         # Expecting 'vendor_id' in data for now since we trust local usage, 

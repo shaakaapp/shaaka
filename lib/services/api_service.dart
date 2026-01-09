@@ -275,10 +275,14 @@ class ApiService {
   }
 
   // Get All Products (Global Market)
-  static Future<Map<String, dynamic>> getProducts() async {
+  static Future<Map<String, dynamic>> getProducts({String? query}) async {
     try {
+      String url = '$baseUrl/products/';
+      if (query != null && query.isNotEmpty) {
+        url += '?search=${Uri.encodeComponent(query)}';
+      }
       final response = await http.get(
-        Uri.parse('$baseUrl/products/'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
 
