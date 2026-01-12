@@ -5,9 +5,9 @@ import '../models/user_profile.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../constants/location_data.dart';
-
-
+import '../theme/app_theme.dart';
 import 'login_page.dart';
+import 'settings_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final bool isCompletingProfile;
@@ -291,24 +291,65 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
+      backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
         title: Text(widget.isCompletingProfile ? 'Complete Profile' : 'Profile'),
         automaticallyImplyLeading: !widget.isCompletingProfile,
+        elevation: 0,
         actions: [
           if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                });
-              },
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _isEditing = true;
+                  });
+                },
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.edit_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
             )
-          else if (!widget.isCompletingProfile) // Only show check if not forcing completion (handled by bottom button) or show it anyway? 
-            // Actually, keep it consistent.
-            IconButton(
-              icon: const Icon(Icons.check),
-              onPressed: _isLoading ? null : _updateProfile,
+          else if (!widget.isCompletingProfile)
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _isLoading ? null : _updateProfile,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Icon(
+                          Icons.check,
+                          color: Colors.white,
+                        ),
+                ),
+              ),
             ),
         ],
       ),
@@ -318,36 +359,79 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Profile Picture
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey[300],
-                    backgroundImage: _profileImageBytes != null
-                        ? MemoryImage(_profileImageBytes!)
-                        : _userProfile!.profilePicUrl != null
-                            ? NetworkImage(_userProfile!.profilePicUrl!)
-                            : null,
-                    child: _profileImageBytes == null && _userProfile!.profilePicUrl == null
-                        ? const Icon(Icons.person, size: 60)
-                        : null,
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: AppAnimations.medium,
+              curve: AppAnimations.defaultCurve,
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.scale(
+                    scale: value,
+                    child: child,
                   ),
-                  if (_isEditing)
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Colors.blue,
-                        child: IconButton(
-                          icon: const Icon(Icons.camera_alt, color: Colors.white),
-                          onPressed: _isLoading ? null : _pickImage,
-                          padding: EdgeInsets.zero,
+                );
+              },
+              child: Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 3,
                         ),
                       ),
+                      child: ClipOval(
+                        child: _profileImageBytes != null
+                            ? Image.memory(
+                                _profileImageBytes!,
+                                fit: BoxFit.cover,
+                              )
+                            : _userProfile!.profilePicUrl != null
+                                ? Image.network(
+                                    _userProfile!.profilePicUrl!,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: Theme.of(context).textTheme.bodyMedium!.color!,
+                                  ),
+                      ),
                     ),
-                ],
+                    if (_isEditing)
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Material(
+                          color: AppTheme.accentTerracotta,
+                          shape: const CircleBorder(),
+                          elevation: 4,
+                          child: InkWell(
+                            onTap: _isLoading ? null : _pickImage,
+                            borderRadius: BorderRadius.circular(24),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -382,7 +466,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       value: _selectedGender,
                       decoration: InputDecoration(
                         labelText: 'Gender',
-                        prefixIcon: const Icon(Icons.person_outline),
+                        prefixIcon: Icon(Icons.person_outline),
                         border: const OutlineInputBorder(),
                         filled: !_isEditing,
                         fillColor: !_isEditing ? Colors.grey[200] : null,
@@ -404,7 +488,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 16),
                     Text(
                       'Category: ${_userProfile!.category}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -551,29 +635,123 @@ class _ProfilePageState extends State<ProfilePage> {
                   },
                   child: const Text('Cancel'),
                 ),
-            ] else 
-               Padding(
-                 padding: const EdgeInsets.only(top: 24.0),
-                 child: OutlinedButton.icon(
-                   onPressed: () async {
-                      await StorageService.clearAll();
-                      if (mounted) {
-                        Navigator.of(context).pushAndRemoveUntil(
+            ] else ...[
+              // Settings Option
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: AppAnimations.medium,
+                curve: AppAnimations.defaultCurve,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  margin: const EdgeInsets.only(top: 16),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
+                            builder: (context) => const SettingsPage(),
                           ),
-                          (route) => false,
                         );
-                      }
-                   },
-                   icon: const Icon(Icons.logout, color: Colors.red),
-                   label: const Text('Logout', style: TextStyle(color: Colors.red)),
-                   style: OutlinedButton.styleFrom(
-                     side: const BorderSide(color: Colors.red),
-                     padding: const EdgeInsets.symmetric(vertical: 12),
-                   ),
-                 ),
-               ),
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.settings_outlined,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Settings',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'App preferences and options',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                      color: Theme.of(context).textTheme.bodyMedium!.color!,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                              color: Theme.of(context).textTheme.bodySmall!.color!,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await StorageService.clearAll();
+                    if (mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                        (route) => false,
+                      );
+                    }
+                  },
+                  icon: Icon(Icons.logout_outlined, color: Theme.of(context).colorScheme.error),
+                  label: Text(
+                    'Logout',
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Theme.of(context).colorScheme.error),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

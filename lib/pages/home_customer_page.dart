@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
 import 'donations_page.dart';
@@ -59,45 +60,96 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
         return true;
       },
       child: Scaffold(
+        backgroundColor: AppTheme.softBeige,
         appBar: AppBar(
-          title: const Text('Shaaka'),
+          title: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.eco,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('Shaaka'),
+            ],
+          ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.person),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const ProfilePage(),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ProfilePage(),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                );
-              },
+                  child: Icon(
+                    Icons.person_outline,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
         body: _pages[_selectedIndex],
-        bottomNavigationBar: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Store',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart),
-              label: 'My Cart',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt),
-              label: 'My Orders',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.volunteer_activism),
-              label: 'Donations',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Colors.deepPurple,
-          onTap: _onItemTapped,
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                icon: Icon(Icons.store_outlined),
+                activeIcon: Icon(Icons.store),
+                label: 'Store',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.shopping_cart_outlined),
+                activeIcon: Icon(Icons.shopping_cart),
+                label: 'My Cart',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.list_alt_outlined),
+                activeIcon: Icon(Icons.list_alt),
+                label: 'My Orders',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.volunteer_activism_outlined),
+                activeIcon: Icon(Icons.volunteer_activism),
+                label: 'Donations',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            selectedItemColor: Theme.of(context).colorScheme.primary,
+            unselectedItemColor: Theme.of(context).textTheme.bodySmall!.color!,
+            onTap: _onItemTapped,
+            elevation: 8,
+          ),
         ),
       ),
     );

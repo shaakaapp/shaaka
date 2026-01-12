@@ -41,12 +41,26 @@ class StorageService {
     return prefs.getString(_keyUserData);
   }
 
+  // Dark Mode
+  static const String _keyDarkMode = 'dark_mode';
+
+  static Future<void> setDarkMode(bool isDark) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyDarkMode, isDark);
+  }
+
+  static Future<bool> getDarkMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyDarkMode) ?? false;
+  }
+
   // Clear all data (logout)
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyUserId);
     await prefs.remove(_keyUserCategory);
     await prefs.remove(_keyUserData);
+    // Note: Dark mode preference is kept even after logout
   }
 }
 

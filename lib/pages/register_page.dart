@@ -1,10 +1,9 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
-
+import '../theme/app_theme.dart';
 import 'profile_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -339,8 +338,10 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
         title: const Text('Register'),
+        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -349,19 +350,52 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // OTP Section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        'Mobile Verification',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: AppAnimations.medium,
+                curve: AppAnimations.defaultCurve,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.verified_user_outlined,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Mobile Verification',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _mobileController,
@@ -493,6 +527,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ],
                   ),
                 ),
+                ),
               ),
               const SizedBox(height: 24),
               // Registration Form
@@ -502,35 +537,78 @@ class _RegisterPageState extends State<RegisterPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Profile Picture
-                    Center(
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.grey[300],
-                            backgroundImage: _profileImageBytes != null
-                                ? MemoryImage(_profileImageBytes!)
-                                : _profileImageUrl != null
-                                    ? NetworkImage(_profileImageUrl!)
-                                    : null,
-                            child: _profileImageBytes == null && _profileImageUrl == null
-                                ? const Icon(Icons.person, size: 60)
-                                : null,
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: AppAnimations.medium,
+                      curve: AppAnimations.defaultCurve,
+                      builder: (context, value, child) {
+                        return Opacity(
+                          opacity: value,
+                          child: Transform.scale(
+                            scale: value,
+                            child: child,
                           ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Colors.blue,
-                              child: IconButton(
-                                icon: const Icon(Icons.camera_alt, color: Colors.white),
-                                onPressed: _isLoading ? null : _pickImage,
-                                padding: EdgeInsets.zero,
+                        );
+                      },
+                      child: Center(
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 3,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: _profileImageBytes != null
+                                    ? Image.memory(
+                                        _profileImageBytes!,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : _profileImageUrl != null
+                                        ? Image.network(
+                                            _profileImageUrl!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Icon(
+                                            Icons.person,
+                                            size: 60,
+                                            color: Theme.of(context).textTheme.bodyMedium!.color!,
+                                          ),
                               ),
                             ),
-                          ),
-                        ],
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Material(
+                                color: AppTheme.accentTerracotta,
+                                shape: const CircleBorder(),
+                                elevation: 4,
+                                child: InkWell(
+                                  onTap: _isLoading ? null : _pickImage,
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -601,7 +679,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       onChanged: _checkPassword,
                       decoration: InputDecoration(
                         labelText: 'Password *',
-                        prefixIcon: const Icon(Icons.lock),
+                        prefixIcon: Icon(Icons.lock),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -643,7 +721,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       obscureText: _obscureConfirmPassword,
                       decoration: InputDecoration(
                         labelText: 'Confirm Password *',
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        prefixIcon: Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureConfirmPassword
@@ -669,26 +747,12 @@ class _RegisterPageState extends State<RegisterPage> {
                       },
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
-                    ElevatedButton(
+                    _AnimatedButton(
                       onPressed: _isLoading ? null : _register,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text(
-                              'Register',
-                              style: TextStyle(fontSize: 16),
-                            ),
+                      isLoading: _isLoading,
+                      child: const Text('Register'),
                     ),
                     const SizedBox(height: 16),
                     TextButton(
@@ -708,22 +772,125 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildPasswordRequirement(String requirement, bool isMet) {
-    return Row(
-      children: [
-        Icon(
-          isMet ? Icons.check_circle : Icons.circle_outlined,
-          color: isMet ? Colors.green : Colors.grey,
-          size: 16,
-        ),
-        const SizedBox(width: 8),
-        Text(
-          requirement,
-          style: TextStyle(
-            color: isMet ? Colors.green : Colors.grey[600],
-            fontSize: 12,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: isMet ? 1.0 : 0.0),
+      duration: AppAnimations.fast,
+      curve: AppAnimations.defaultCurve,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: 0.5 + (value * 0.5),
+          child: Row(
+            children: [
+              AnimatedSwitcher(
+                duration: AppAnimations.fast,
+                child: Icon(
+                  isMet ? Icons.check_circle : Icons.circle_outlined,
+                  key: ValueKey(isMet),
+                  color: isMet ? Theme.of(context).colorScheme.primary : Theme.of(context).textTheme.bodySmall!.color!,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                requirement,
+                style: TextStyle(
+                  color: isMet
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).textTheme.bodySmall!.color!,
+                  fontSize: 12,
+                  fontWeight: isMet ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
+    );
+  }
+}
+
+// Animated Button Widget (same as login page)
+class _AnimatedButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final Widget child;
+
+  const _AnimatedButton({
+    required this.onPressed,
+    required this.isLoading,
+    required this.child,
+  });
+
+  @override
+  State<_AnimatedButton> createState() => _AnimatedButtonState();
+}
+
+class _AnimatedButtonState extends State<_AnimatedButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: AppAnimations.fast,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) {
+        setState(() => _isPressed = true);
+        _controller.forward();
+      },
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        _controller.reverse();
+        if (widget.onPressed != null) {
+          widget.onPressed!();
+        }
+      },
+      onTapCancel: () {
+        setState(() => _isPressed = false);
+        _controller.reverse();
+      },
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: 1.0 - (_controller.value * 0.05),
+            child: ElevatedButton(
+              onPressed: widget.onPressed,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: _isPressed ? 2 : 4,
+              ),
+              child: widget.isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : widget.child,
+            ),
+          );
+        },
+      ),
     );
   }
 }

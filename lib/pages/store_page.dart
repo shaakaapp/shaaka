@@ -3,6 +3,7 @@ import '../models/product.dart';
 import '../services/api_service.dart';
 import '../widgets/product_card.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 import 'product_details_page.dart';
 import 'add_product_page.dart';
 import 'search_page.dart';
@@ -23,6 +24,8 @@ class StorePage extends StatefulWidget {
 
 class _StorePageState extends State<StorePage> {
   List<Product> _products = [];
+  List<Product> _filteredProducts = [];
+  final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
   String? _error;
 
@@ -30,6 +33,12 @@ class _StorePageState extends State<StorePage> {
   void initState() {
     super.initState();
     _loadProducts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProducts() async {
@@ -61,6 +70,11 @@ class _StorePageState extends State<StorePage> {
         _isLoading = false;
         if (result['success'] == true) {
           _products = result['data'];
+          _filteredProducts = _products;
+          // Re-apply filter if search text exists
+          if (_searchController.text.isNotEmpty) {
+             _filterProducts(_searchController.text);
+          }
         } else {
           _error = result['error'] is Map 
               ? (result['error']['error'] ?? 'Failed to load products') 
@@ -70,34 +84,105 @@ class _StorePageState extends State<StorePage> {
     }
   }
 
+  void _filterProducts(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredProducts = _products;
+      });
+      return;
+    }
+
+    setState(() {
+      _filteredProducts = _products.where((product) {
+        return product.name.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(_error!, style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 8),
-            ElevatedButton(onPressed: _loadProducts, child: const Text('Retry')),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading products...',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _error!,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _loadProducts,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (_products.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.store_mall_directory, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(widget.isVendorView ? 'You haven\'t added any products yet.' : 'No items in the market.', style: const TextStyle(color: Colors.grey, fontSize: 16)),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  widget.isVendorView
+                      ? Icons.inventory_2_outlined
+                      : Icons.store_outlined,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                widget.isVendorView
+                    ? 'You haven\'t added any products yet.'
+                    : 'No items in the market.',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -107,29 +192,70 @@ class _StorePageState extends State<StorePage> {
         // Search Header
         if (!widget.isVendorView)
           Container(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.all(16.0),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const SearchPage()),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.search, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Search for products...', style: TextStyle(color: Colors.grey)),
-                  ],
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const SearchPage()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.search_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Search for products...',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            ),
+          )
+        else
+          Container(
+            color: AppTheme.warmWhite,
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search my products...',
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterProducts('');
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: _filterProducts,
             ),
           ),
           
@@ -137,30 +263,48 @@ class _StorePageState extends State<StorePage> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadProducts,
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.7, // Adjust aspect ratio for taller cards with rating
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: _products.length,
-              itemBuilder: (context, index) {
-                return ProductCard(
-                  product: _products[index],
-                  onTap: () {
-                      Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => ProductDetailsPage(product: _products[index]))
-                      ).then((_) => _loadProducts()); // Reload in case rating changed
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Calculate responsive aspect ratio based on screen size
+                final screenWidth = constraints.maxWidth;
+                final isSmallScreen = screenWidth < 360;
+                final isVerySmallScreen = screenWidth < 320;
+                // Adjust aspect ratio to prevent overflow - larger ratio = more height
+                double aspectRatio;
+                if (isVerySmallScreen) {
+                  aspectRatio = 0.58; // More height for very small screens
+                } else if (isSmallScreen) {
+                  aspectRatio = 0.64; // More height for small screens
+                } else {
+                  aspectRatio = 0.68; // More height for normal screens
+                }
+                
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: aspectRatio,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: _filteredProducts.length,
+                  itemBuilder: (context, index) {
+                    return ProductCard(
+                      product: _filteredProducts[index],
+                      onTap: () {
+                          Navigator.of(context).push(
+                              MaterialPageRoute(builder: (context) => ProductDetailsPage(product: _filteredProducts[index]))
+                          ).then((_) => _loadProducts()); // Reload in case rating changed
+                      },
+                      onEdit: widget.isVendorView ? () {
+                           Navigator.of(context).push(
+                              MaterialPageRoute(builder: (context) => AddProductPage(product: _filteredProducts[index]))
+                          ).then((value) {
+                               if (value == true) _loadProducts();
+                          });
+                      } : null,
+                    );
                   },
-                  onEdit: widget.isVendorView ? () {
-                       Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => AddProductPage(product: _products[index]))
-                      ).then((value) {
-                           if (value == true) _loadProducts();
-                      });
-                  } : null,
                 );
               },
             ),

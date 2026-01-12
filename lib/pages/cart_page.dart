@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../models/cart_order_models.dart';
+import '../theme/app_theme.dart';
 import 'checkout_page.dart';
 
 class CartPage extends StatefulWidget {
@@ -113,24 +114,91 @@ class _CartPageState extends State<CartPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
         title: const Text('My Cart'),
+        elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading cart...',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).textTheme.bodyMedium!.color!,
+                    ),
+                  ),
+                ],
+              ),
+            )
           : _error != null
-              ? Center(child: Text(_error!))
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _error!,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
               : _cart == null || _cart!.items.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.shopping_cart_outlined,
-                              size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text('Your cart is empty',
-                              style: TextStyle(fontSize: 18)),
-                        ],
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.shopping_cart_outlined,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Your cart is empty',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Add some products to get started!',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).textTheme.bodyMedium!.color!,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   : Column(
@@ -141,96 +209,203 @@ class _CartPageState extends State<CartPage> {
                             itemCount: _cart!.items.length,
                             itemBuilder: (context, index) {
                               final item = _cart!.items[index];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 16),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    children: [
-                                      // Image
-                                      Container(
-                                        width: 80,
-                                        height: 80,
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[200],
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          image: item.productImageUrl != null
-                                              ? DecorationImage(
-                                                  image: NetworkImage(
-                                                      item.productImageUrl!),
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : null,
+                              return TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 0.0, end: 1.0),
+                                duration: AppAnimations.medium,
+                                curve: AppAnimations.defaultCurve,
+                                builder: (context, value, child) {
+                                  return Opacity(
+                                    opacity: value,
+                                    child: Transform.translate(
+                                      offset: Offset(0, 20 * (1 - value)),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12.0),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Image
+                                        Container(
+                                          width: 70,
+                                          height: 70,
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.softBeige,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: item.productImageUrl != null
+                                                ? Image.network(
+                                                    item.productImageUrl!,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (c, e, s) => Icon(
+                                                      Icons.shopping_bag_outlined,
+                                                      color: Theme.of(context).textTheme.bodySmall!.color!,
+                                                    ),
+                                                  )
+                                                : Icon(
+                                                    Icons.shopping_bag_outlined,
+                                                    color: Theme.of(context).textTheme.bodySmall!.color!,
+                                                  ),
+                                          ),
                                         ),
-                                        child: item.productImageUrl == null
-                                            ? const Icon(Icons.shopping_bag,
-                                                color: Colors.grey)
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 16),
-                                      // Details
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              item.productName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
+                                        const SizedBox(width: 12),
+                                        // Details
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                item.productName,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium
+                                                    ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 15,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              'Size: ${item.unitValue < 1 && (item.unit == "kg" || item.unit == "l") ? "${(item.unitValue * 1000).toInt()}${item.unit == "kg" ? "g" : "ml"}" : "${item.unitValue} ${item.unit}"}',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                'Size: ${item.unitValue < 1 && (item.unit == "kg" || item.unit == "l") ? "${(item.unitValue * 1000).toInt()}${item.unit == "kg" ? "g" : "ml"}" : "${item.unitValue} ${item.unit}"}',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                  color: Theme.of(context).textTheme.bodySmall!.color!,
+                                                  fontSize: 12,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                            ),
-                                            Text(
-                                              '₹${item.totalPrice.toStringAsFixed(2)}',
-                                              style: TextStyle(
-                                                color: Colors.green[800],
-                                                fontWeight: FontWeight.bold
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                '₹${item.totalPrice.toStringAsFixed(2)}',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                IconButton(
-                                                  icon: const Icon(Icons.remove_circle_outline),
-                                                  onPressed: () {
-                                                      _updateQuantity(item, item.quantity - 1.0);
-                                                  },
-                                                  padding: EdgeInsets.zero,
-                                                  constraints: const BoxConstraints(),
-                                                ),
-                                                Padding(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                                  child: Text('${item.quantity.toInt()}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.add_circle_outline),
-                                                  onPressed: () {
-                                                      _updateQuantity(item, item.quantity + 1.0);
-                                                  },
-                                                  padding: EdgeInsets.zero,
-                                                  constraints: const BoxConstraints(),
-                                                ),
-                                                const Spacer(),
-                                                IconButton(
-                                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                                  onPressed: () => _removeItem(item),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Material(
+                                                    color: Theme.of(context).colorScheme.primary
+                                                        .withOpacity(0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(8),
+                                                    child: InkWell(
+                                                      onTap: () {
+                                                        _updateQuantity(
+                                                            item,
+                                                            item.quantity - 1.0);
+                                                      },
+                                                      borderRadius:
+                                                          BorderRadius.circular(8),
+                                                      child: Container(
+                                                        width: 32,
+                                                        height: 32,
+                                                        alignment:
+                                                            Alignment.center,
+                                                        child: Icon(
+                                                          Icons.remove_rounded,
+                                                          size: 18,
+                                                          color:
+                                                              Theme.of(context).colorScheme.primary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(horizontal: 12),
+                                                    child: Text(
+                                                      '${item.quantity.toInt()}',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleMedium
+                                                          ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 15,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Material(
+                                                    color: Theme.of(context).colorScheme.primary
+                                                        .withOpacity(0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(8),
+                                                    child: InkWell(
+                                                      onTap: () {
+                                                        _updateQuantity(
+                                                            item,
+                                                            item.quantity + 1.0);
+                                                      },
+                                                      borderRadius:
+                                                          BorderRadius.circular(8),
+                                                      child: Container(
+                                                        width: 32,
+                                                        height: 32,
+                                                        alignment:
+                                                            Alignment.center,
+                                                        child: Icon(
+                                                          Icons.add_rounded,
+                                                          size: 18,
+                                                          color:
+                                                              Theme.of(context).colorScheme.primary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const Spacer(),
+                                                  Material(
+                                                    color: Theme.of(context).colorScheme.error
+                                                        .withOpacity(0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(8),
+                                                    child: InkWell(
+                                                      onTap: () => _removeItem(item),
+                                                      borderRadius:
+                                                          BorderRadius.circular(8),
+                                                      child: Container(
+                                                        width: 36,
+                                                        height: 36,
+                                                        alignment:
+                                                            Alignment.center,
+                                                        child: Icon(
+                                                          Icons.delete_outline_rounded,
+                                                          size: 20,
+                                                          color: Theme.of(context).colorScheme.error,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );
@@ -241,7 +416,7 @@ class _CartPageState extends State<CartPage> {
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppTheme.warmWhite,
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
@@ -258,36 +433,48 @@ class _CartPageState extends State<CartPage> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Total Amount:',
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                     Text(
                                       '₹${_cart!.totalPrice.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 20),
                                 SizedBox(
                                   width: double.infinity,
-                                  child: ElevatedButton(
+                                  child: _AnimatedButton(
                                     onPressed: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(builder: (context) => const CheckoutPage()),
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const CheckoutPage(),
+                                        ),
                                       );
                                     },
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      backgroundColor: Colors.orange, // Amazon-ish
+                                    isLoading: false,
+                                    child: const Text(
+                                      'Proceed to Checkout',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                    child: const Text('Proceed to Buy', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
                                   ),
                                 ),
                               ],
@@ -296,6 +483,92 @@ class _CartPageState extends State<CartPage> {
                         ),
                       ],
                     ),
+    );
+  }
+}
+
+// Animated Button Widget
+class _AnimatedButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final Widget child;
+
+  const _AnimatedButton({
+    required this.onPressed,
+    required this.isLoading,
+    required this.child,
+  });
+
+  @override
+  State<_AnimatedButton> createState() => _AnimatedButtonState();
+}
+
+class _AnimatedButtonState extends State<_AnimatedButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: AppAnimations.fast,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) {
+        setState(() => _isPressed = true);
+        _controller.forward();
+      },
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        _controller.reverse();
+        if (widget.onPressed != null) {
+          widget.onPressed!();
+        }
+      },
+      onTapCancel: () {
+        setState(() => _isPressed = false);
+        _controller.reverse();
+      },
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: 1.0 - (_controller.value * 0.05),
+            child: ElevatedButton(
+              onPressed: widget.onPressed,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: _isPressed ? 2 : 4,
+              ),
+              child: widget.isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : widget.child,
+            ),
+          );
+        },
+      ),
     );
   }
 }
