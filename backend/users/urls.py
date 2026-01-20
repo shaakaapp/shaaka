@@ -12,4 +12,3 @@ urlpatterns = [
     path('users/<int:user_id>/addresses/', views.user_addresses_list_create, name='user_addresses_list_create'),
     path('users/<int:user_id>/addresses/<int:address_id>/', views.user_address_detail, name='user_address_detail'),
 ]
-

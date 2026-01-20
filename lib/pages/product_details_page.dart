@@ -852,8 +852,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               ),
             ];
           },
-          body: TabBarView(
-            children: [
+          body: Container(
+            color: AppTheme.softBeige,
+            child: TabBarView(
+              children: [
               // Description Tab
               SingleChildScrollView(
                 padding: const EdgeInsets.all(20.0),
@@ -1160,6 +1162,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 ),
               ),
             ],
+          ),
           ),
         ),
         floatingActionButton: (_currentUserId != null &&
