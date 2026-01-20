@@ -150,13 +150,13 @@ class _DonationsPageState extends State<DonationsPage> {
               if (_selectedType == 'Food' || _selectedType == 'Clothes') ...[
                  TextFormField(
                    controller: _itemNameController,
-                   decoration: const InputDecoration(labelText: 'Item Name (e.g., Rice, Shirts)', border: OutlineInputBorder()),
+                   decoration: const InputDecoration(labelText: 'Item Name * (e.g., Rice, Shirts)', border: OutlineInputBorder()),
                    validator: (v) => v!.isEmpty ? 'Required' : null,
                  ),
                  const SizedBox(height: 16),
                  TextFormField(
                    controller: _quantityController,
-                   decoration: const InputDecoration(labelText: 'Quantity (e.g., 5 kg, 2 bags)', border: OutlineInputBorder()),
+                   decoration: const InputDecoration(labelText: 'Quantity * (e.g., 5 kg, 2 bags)', border: OutlineInputBorder()),
                    validator: (v) => v!.isEmpty ? 'Required' : null,
                  ),
                  const SizedBox(height: 16),
@@ -169,13 +169,13 @@ class _DonationsPageState extends State<DonationsPage> {
                  const SizedBox(height: 16),
                  TextFormField(
                    controller: _pickupAddressController,
-                   decoration: const InputDecoration(labelText: 'Pickup Address', border: OutlineInputBorder()),
+                   decoration: const InputDecoration(labelText: 'Pickup Address *', border: OutlineInputBorder()),
                    validator: (v) => v!.isEmpty ? 'Required' : null,
                  ),
                  const SizedBox(height: 16),
                   TextFormField(
                    controller: _contactNumberController,
-                   decoration: const InputDecoration(labelText: 'Contact Number', border: OutlineInputBorder()),
+                   decoration: const InputDecoration(labelText: 'Contact Number *', border: OutlineInputBorder()),
                    validator: (v) => v!.isEmpty ? 'Required' : null,
                    keyboardType: TextInputType.phone,
                  ),
@@ -222,15 +222,16 @@ class _DonationsPageState extends State<DonationsPage> {
                  const SizedBox(height: 24),
                  TextFormField(
                    controller: _amountController,
-                   decoration: const InputDecoration(labelText: 'Amount Paid (₹)', border: OutlineInputBorder()),
+                   decoration: const InputDecoration(labelText: 'Amount Paid (₹) *', border: OutlineInputBorder()),
                    validator: (v) => v!.isEmpty ? 'Required' : null,
                    keyboardType: TextInputType.number,
                  ),
                  const SizedBox(height: 16),
-                 TextFormField(
+                  TextFormField(
                    controller: _messageController,
-                   decoration: const InputDecoration(labelText: 'Message (Optional)', border: OutlineInputBorder()),
+                   decoration: const InputDecoration(labelText: 'Message *', border: OutlineInputBorder()),
                    maxLines: 2,
+                   validator: (v) => v!.isEmpty ? 'Required' : null,
                  ),
                  const SizedBox(height: 16),
                  const Text('Upload Payment Screenshot *', style: TextStyle(fontWeight: FontWeight.bold)),

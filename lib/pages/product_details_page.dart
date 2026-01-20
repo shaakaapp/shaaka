@@ -16,12 +16,14 @@ class ProductDetailsPage extends StatefulWidget {
   State<ProductDetailsPage> createState() => _ProductDetailsPageState();
 }
 
-class _ProductDetailsPageState extends State<ProductDetailsPage> {
+class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTickerProviderStateMixin {
   late Product _product;
   ProductReview? _userReview;
   int? _currentUserId;
   List<ProductReview> _reviews = [];
   bool _isLoadingReviews = false;
+  
+  late TabController _tabController;
 
   // Cart Logic
   CartItem? _cartItem;
@@ -40,90 +42,134 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   void initState() {
     super.initState();
     _product = widget.product;
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {}); // Rebuild when tab changes to update FAB visibility
+    });
+    
+    print('ProductDetailsPage initState - Product: ${_product.name}');
     _initialize();
     _calculateVariants();
   }
+  
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   void _calculateVariants() {
-     _variants.clear();
-     String unit = _product.unit.toLowerCase();
-     
-     if (unit == 'kg' || unit == 'kilogram') {
-         _variants = [
-             {'name': '250 g', 'step': 0.25},
-             {'name': '500 g', 'step': 0.50},
-             {'name': '1 kg', 'step': 1.0},
-             {'name': '2 kg', 'step': 2.0},
-             {'name': '5 kg', 'step': 5.0},
-         ];
-     } else if (unit == 'l' || unit == 'litre' || unit == 'liter') {
-         _variants = [
-             {'name': '250 ml', 'step': 0.25},
-             {'name': '500 ml', 'step': 0.50},
-             {'name': '1 L', 'step': 1.0},
-             {'name': '2 L', 'step': 2.0},
-         ];
-     } else if (unit == 'g' || unit == 'gram' || unit == 'grams') {
-          _variants = [
-              {'name': '100 g', 'step': 100.0},
-              {'name': '250 g', 'step': 250.0},
-              {'name': '500 g', 'step': 500.0},
-              {'name': '1 kg', 'step': 1000.0},
-          ];
-     } else {
-         _variants = [
-             {'name': '1 ${_product.unit}', 'step': 1.0},
-             {'name': '2 ${_product.unit}', 'step': 2.0},
-             {'name': '5 ${_product.unit}', 'step': 5.0},
-         ];
-     }
-     
-     // Set default to 1.0 step or first available
-     var defaultVariant = _variants.firstWhere((v) => v['step'] == 1.0, orElse: () => _variants.first);
-     _quantityStep = defaultVariant['step'];
-     _selectedUnitName = defaultVariant['name'];
+    _variants = [];
+    final unit = _product.unit.toLowerCase();
+
+    if (unit == 'kg') {
+      _variants = [
+        {'step': 0.25, 'name': '250g'},
+        {'step': 0.5, 'name': '500g'},
+        {'step': 1.0, 'name': '1kg'},
+        {'step': 2.0, 'name': '2kg'},
+      ];
+    } else if (unit == 'l' || unit == 'liter' || unit == 'litre') {
+      _variants = [
+        {'step': 0.25, 'name': '250ml'},
+        {'step': 0.5, 'name': '500ml'},
+        {'step': 1.0, 'name': '1L'},
+        {'step': 2.0, 'name': '2L'},
+      ];
+    } else if (unit == 'dozen') {
+      _variants = [
+        {'step': 0.5, 'name': '6 pcs'},
+        {'step': 1.0, 'name': '1 dozen'},
+        {'step': 2.0, 'name': '2 dozen'},
+      ];
+    } else {
+      _variants = [
+        {'step': 1.0, 'name': '1 $unit'},
+        {'step': 2.0, 'name': '2 $unit'},
+        {'step': 5.0, 'name': '5 $unit'},
+      ];
+    }
+
+    _quantityStep = _variants.first['step'];
+    _selectedUnitName = _variants.first['name'];
   }
 
   Future<void> _initialize() async {
     _currentUserId = await StorageService.getUserId();
-    _loadReviews();
     _checkCart();
     _loadSimilarProducts();
+    _loadReviews();
   }
 
   Future<void> _loadSimilarProducts() async {
-      setState(() => _isLoadingSimilar = true);
-      final result = await ApiService.getProducts(); // Fetch all (for now, simpler than backend change)
-      if (mounted) {
-        setState(() {
-            _isLoadingSimilar = false;
-            if (result['success'] == true) {
-                final allProducts = result['data'] as List<Product>;
-                _similarProducts = allProducts.where((p) => 
-                    p.category == _product.category && p.id != _product.id
-                ).take(10).toList();
-            }
-        });
-      }
+    setState(() => _isLoadingSimilar = true);
+    final result = await ApiService.getProducts();
+    if (mounted && result['success'] == true) {
+      setState(() {
+        _similarProducts = ((result['data'] as List).cast<Product>()).take(4).toList();
+        _isLoadingSimilar = false;
+      });
+    }
   }
-  
+
   Future<void> _loadReviews() async {
     setState(() => _isLoadingReviews = true);
     final result = await ApiService.getProductReviews(_product.id);
-    if (mounted) {
+    if (mounted && result['success'] == true) {
       setState(() {
-        _isLoadingReviews = false;
-        if (result['success'] == true) {
-          _reviews = result['data'];
-          if (_currentUserId != null) {
-            try {
-              _userReview = _reviews.firstWhere((r) => r.userId == _currentUserId);
-            } catch (e) {
-              _userReview = null;
-            }
+        _reviews = result['data'];
+        if (_currentUserId != null) {
+          try {
+            _userReview = _reviews.firstWhere((r) => r.userId == _currentUserId);
+          } catch (e) {
+            _userReview = null;
           }
         }
+        _isLoadingReviews = false;
       });
+    }
+  }
+
+  Future<void> _checkCart() async {
+    if (_currentUserId == null) return;
+    
+    final result = await ApiService.getCart(_currentUserId!);
+    if (mounted && result['success'] == true) {
+      final Cart cart = result['data'];
+      try {
+        setState(() {
+          _cartItem = cart.items.firstWhere((item) => 
+              item.productId == _product.id && item.unitValue == _quantityStep
+          );
+        });
+      } catch (e) {
+        setState(() => _cartItem = null);
+      }
+    }
+  }
+
+  Future<void> _addToCart() async {
+    final userId = await StorageService.getUserId();
+    if (userId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to add items to cart')));
+      return;
+    }
+
+    setState(() => _isLoadingCart = true);
+    final result = await ApiService.addToCart(userId, _product.id, _quantityStep, quantity: 1);
+    setState(() => _isLoadingCart = false);
+
+    if (mounted) {
+      if (result['success'] == true) {
+        final Cart cart = result['data'];
+        setState(() {
+           _cartItem = cart.items.firstWhere((item) => 
+               item.productId == _product.id && item.unitValue == _quantityStep
+           );
+        });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to Cart!'), backgroundColor: Colors.green));
+      }
     }
   }
 
@@ -187,7 +233,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                  index < rating
                                      ? Icons.star_rounded
                                      : Icons.star_border_rounded,
-                                 color: Color(0xFFD4A574),
+                                 color: const Color(0xFFD4A574),
                                  size: 40,
                                ),
                              ),
@@ -278,7 +324,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                  index < rating
                                      ? Icons.star_rounded
                                      : Icons.star_border_rounded,
-                                 color: Color(0xFFD4A574),
+                                 color: const Color(0xFFD4A574),
                                  size: 40,
                                ),
                              ),
@@ -374,14 +420,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Future<void> _deleteReview() async {
        if (_userReview == null) return;
 
-       // Confirm delete? Maybe overkill for now, just delete.
        final result = await ApiService.deleteReview(_userReview!.id);
 
        if (!mounted) return;
 
        if (result['success'] == true) {
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review Deleted!'), backgroundColor: Colors.grey));
-           _userReview = null; // Clear local reference immediately
+           _userReview = null; 
            _refreshProductAndReviews();
        } else {
             _showError(result['error']);
@@ -389,14 +434,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   }
 
   Future<void> _refreshProductAndReviews() async {
-      // Refresh Product Details to get updated rating
       final productResult = await ApiService.getProductDetails(_product.id);
       if (productResult['success'] == true) {
            setState(() {
                _product = productResult['data'];
            });
       }
-      _loadReviews(); // Refresh reviews list
+      _loadReviews();
   }
   
   void _showError(dynamic error) {
@@ -406,245 +450,259 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
   }
 
-  Future<void> _checkCart() async {
-    if (_currentUserId == null) return;
-    
-    final result = await ApiService.getCart(_currentUserId!);
-    if (mounted && result['success'] == true) {
-      final Cart cart = result['data'];
-      try {
-        setState(() {
-          // Check for exact product AND unit value match
-          _cartItem = cart.items.firstWhere((item) => 
-              item.productId == _product.id && item.unitValue == _quantityStep
-          );
-        });
-      } catch (e) {
-        setState(() => _cartItem = null);
-      }
-    }
-  }
-
-  Future<void> _addToCart() async {
-    final userId = await StorageService.getUserId();
-    if (userId == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to add items to cart')));
-      return;
-    }
-
-    setState(() => _isLoadingCart = true);
-
-    // Pass unitValue and default quantity 1 (count)
-    final result = await ApiService.addToCart(userId, _product.id, _quantityStep, quantity: 1); 
-
-    setState(() => _isLoadingCart = false);
-
-    if (mounted) {
-      if (result['success'] == true) {
-        final Cart cart = result['data'];
-        setState(() {
-           _cartItem = cart.items.firstWhere((item) => 
-               item.productId == _product.id && item.unitValue == _quantityStep
-           );
-        });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to Cart!'), backgroundColor: Colors.green));
-      } else {
-        _showError(result['error']);
-      }
-    }
-  }
-
-  Future<void> _updateCartQuantity(bool increment) async {
-      if (_cartItem == null || _currentUserId == null) return;
-
-      setState(() => _isLoadingCart = true);
-      
-      double currentQty = _cartItem!.quantity;
-      double newQty;
-      
-      // Increment COUNT by 1
-      if (increment) {
-          newQty = currentQty + 1.0;
-      } else {
-          newQty = currentQty - 1.0;
-      }
-      
-      if (newQty <= 0) {
-          // Remove item
-          final result = await ApiService.removeFromCart(_currentUserId!, _cartItem!.id);
-          if (mounted) {
-              setState(() => _isLoadingCart = false);
-              if (result['success'] == true) {
-                  setState(() => _cartItem = null);
-              } else {
-                  _showError(result['error']);
-              }
-          }
-      } else {
-          // Update item
-          final result = await ApiService.updateCartItem(_currentUserId!, _cartItem!.id, newQty);
-           if (mounted) {
-              setState(() => _isLoadingCart = false);
-              if (result['success'] == true) {
-                  final Cart cart = result['data'];
-                   setState(() {
-                       try {
-                        _cartItem = cart.items.firstWhere((item) => 
-                            item.productId == _product.id && item.unitValue == _quantityStep
-                        );
-                       } catch (e) {
-                         _cartItem = null;
-                       }
-                   });
-              } else {
-                  _showError(result['error']);
-              }
-          }
-      }
-  }
-
   int _currentImageIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: AppTheme.softBeige,
-        body: NestedScrollView(
-          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-            return <Widget>[
-              SliverAppBar(
-                expandedHeight: 400.0,
-                floating: false,
-                pinned: true,
-                backgroundColor: AppTheme.warmWhite,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: _product.images.isNotEmpty
-                      ? Stack(
-                          children: [
-                            PageView.builder(
-                              itemCount: _product.images.length,
-                              onPageChanged: (index) {
-                                setState(() {
-                                  _currentImageIndex = index;
-                                });
-                              },
-                              itemBuilder: (context, index) {
-                                return TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: AppAnimations.medium,
-                                  curve: AppAnimations.defaultCurve,
-                                  builder: (context, value, child) {
-                                    return Opacity(
-                                      opacity: value,
-                                      child: Transform.scale(
-                                        scale: 0.95 + (value * 0.05),
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: Image.network(
-                                    _product.images[index].imageUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: AppTheme.softBeige,
-                                        child: Icon(
-                                          Icons.broken_image_outlined,
-                                          size: 64,
-                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                                        ),
-                                      );
-                                    },
+    print('ProductDetailsPage build called');
+    
+    return Scaffold(
+      backgroundColor: AppTheme.softBeige,
+      appBar: AppBar(
+        title: Text(_product.name),
+        backgroundColor: AppTheme.warmWhite,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image Gallery
+            SizedBox(
+              height: 400,
+              child: Stack(
+                children: [
+                  _product.images.isNotEmpty
+                      ? PageView.builder(
+                          itemCount: _product.images.length,
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentImageIndex = index;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            return Image.network(
+                              _product.images[index].imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: AppTheme.softBeige,
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 64,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.3),
                                   ),
                                 );
                               },
-                            ),
-                            // Image indicators
-                            if (_product.images.length > 1)
-                              Positioned(
-                                bottom: 20,
-                                left: 0,
-                                right: 0,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: List.generate(
-                                    _product.images.length,
-                                    (index) => AnimatedContainer(
-                                      duration: AppAnimations.fast,
-                                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                                      width: _currentImageIndex == index ? 24 : 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: _currentImageIndex == index
-                                            ? Theme.of(context).colorScheme.primary
-                                            : Colors.white.withOpacity(0.5),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
+                            );
+                          },
                         )
                       : Container(
-                          color: Theme.of(context).colorScheme.surface,
-                          child: Icon(
-                            Icons.image_outlined,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                          color: AppTheme.warmWhite,
+                          child: Center(
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 64,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.3),
+                            ),
                           ),
                         ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: AppAnimations.medium,
-                  curve: AppAnimations.defaultCurve,
-                  builder: (context, value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset(0, 20 * (1 - value)),
-                        child: child,
+                  // Image indicators
+                  if (_product.images.length > 1)
+                    Positioned(
+                      bottom: 16,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _product.images.length,
+                          (index) => Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _currentImageIndex == index
+                                  ? AppTheme.accentTerracotta
+                                  : Colors.white.withOpacity(0.5),
+                            ),
+                          ),
+                        ),
                       ),
-                    );
-                  },
-                  child: Container(
-                    color: AppTheme.warmWhite,
+                    ),
+                ],
+              ),
+            ),
+
+            
+            // Product Details
+            Container(
+              color: AppTheme.warmWhite,
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _product.name,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '₹${(_product.price * _quantityStep).toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
+                  // Unit Selection Dropdown
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.softBeige,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<double>(
+                        value: _quantityStep,
+                        isExpanded: true,
+                        icon: const Icon(Icons.arrow_drop_down, color: AppTheme.primaryGreen),
+                        items: _variants.map((variant) {
+                          return DropdownMenuItem<double>(
+                            value: variant['step'],
+                            child: Text(
+                              variant['name'],
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _quantityStep = value;
+                              _selectedUnitName = _variants.firstWhere((v) => v['step'] == value)['name'];
+                              _cartItem = null; // Reset current cart viewing state to check for new unit
+                            });
+                            _checkCart(); // Check if this new unit variant is in cart
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text(
+                    'Stock: ${_product.stockQuantity}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Vendor: ${_product.vendorName}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            
+            // Tabs
+            Container(
+              color: AppTheme.warmWhite,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: AppTheme.accentTerracotta,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: AppTheme.accentTerracotta,
+                tabs: const [
+                  Tab(text: "Description"),
+                  Tab(text: "Reviews"),
+                ],
+              ),
+            ),
+
+            // Tab Content
+            SizedBox(
+              height: 600,
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Description Tab
+                  SingleChildScrollView(
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Product Name
                         Text(
-                          _product.name,
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          'Description',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        // Price and Unit Selector Row
-                        Row(
-                          children: [
-                            Expanded(
+                        const SizedBox(height: 12),
+                        Text(
+                          _product.description ?? 'No description available.',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Reviews Tab
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        if (_isLoadingReviews)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32.0),
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          )
+                        else if (_reviews.isEmpty)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32.0),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    '₹${(_product.price * _quantityStep).toStringAsFixed(2)}',
-                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.rate_review_outlined,
+                                      size: 40,
                                       color: Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 16),
                                   Text(
-                                    'For $_selectedUnitName',
+                                    'No reviews yet',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Be the first to review!',
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       color: Theme.of(context).textTheme.bodyMedium!.color!,
                                     ),
@@ -652,725 +710,176 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 ],
                               ),
                             ),
-                            // Unit Selector
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                          )
+                        else
+                          ListView.builder(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: _reviews.length,
+                            itemBuilder: (context, index) {
+                              final review = _reviews[index];
+                              final isUserReview = _currentUserId != null &&
+                                  review.userId == _currentUserId;
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                elevation: 1,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ),
-                              child: DropdownButton<double>(
-                                value: _quantityStep,
-                                underline: const SizedBox(),
-                                icon: Icon(
-                                  Icons.arrow_drop_down_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                items: _variants.map((v) {
-                                  return DropdownMenuItem<double>(
-                                    value: v['step'],
-                                    child: Text(
-                                      v['name'],
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.onSurface,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    setState(() {
-                                      _quantityStep = value;
-                                      _selectedUnitName = _variants
-                                          .firstWhere((v) => v['step'] == value)['name'];
-                                    });
-                                    _checkCart();
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Stock and Rating Row
-                        Row(
-                          children: [
-                            // Stock Status
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _product.stockQuantity > 0
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
-                                    : Theme.of(context).colorScheme.error.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _product.stockQuantity > 0
-                                        ? Icons.check_circle_outline
-                                        : Icons.cancel_outlined,
-                                    size: 16,
-                                    color: _product.stockQuantity > 0
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).colorScheme.error,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _product.stockQuantity > 0
-                                        ? (_product.stockQuantity < 5
-                                            ? 'Only ${_product.stockQuantity} left!'
-                                            : 'In Stock')
-                                        : 'Out of Stock',
-                                    style: TextStyle(
-                                      color: _product.stockQuantity > 0
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Theme.of(context).colorScheme.error,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Spacer(),
-                            // Rating
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Color(0xFFD4A574).withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.star_rounded,
-                                    size: 16,
-                                    color: Color(0xFFD4A574),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${_product.averageRating} (${_product.ratingCount})',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                      color: Theme.of(context).colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Vendor Info
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => Scaffold(
-                                    appBar: AppBar(
-                                      title: Text(_product.vendorName),
-                                      elevation: 0,
-                                    ),
-                                    body: StorePage(vendorId: _product.vendorId),
-                                  ),
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.store_outlined,
-                                    color: Theme.of(context).colorScheme.primary,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Sold by: ${_product.vendorName}',
-                                    style: TextStyle(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    size: 14,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              SliverPersistentHeader(
-                delegate: _SliverAppBarDelegate(
-                  TabBar(
-                    labelColor: Theme.of(context).colorScheme.primary,
-                    unselectedLabelColor: Theme.of(context).textTheme.bodySmall!.color!,
-                    indicatorColor: Theme.of(context).colorScheme.primary,
-                    indicatorWeight: 3,
-                    labelStyle: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    tabs: const [
-                      Tab(text: "Description"),
-                      Tab(text: "Reviews"),
-                    ],
-                  ),
-                ),
-                pinned: true,
-              ),
-            ];
-          },
-          body: Container(
-            color: AppTheme.softBeige,
-            child: TabBarView(
-              children: [
-              // Description Tab
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: AppAnimations.medium,
-                      curve: AppAnimations.defaultCurve,
-                      builder: (context, value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, 20 * (1 - value)),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Description',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _product.description ?? 'No description available.',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              height: 1.6,
-                              color: Theme.of(context).textTheme.bodyMedium!.color!,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    // Similar Products Section
-                    if (_isLoadingSimilar)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      )
-                    else if (_similarProducts.isNotEmpty) ...[
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        duration: AppAnimations.medium,
-                        curve: AppAnimations.defaultCurve,
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 20 * (1 - value)),
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Similar Products',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              height: 280,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: _similarProducts.length,
-                                itemBuilder: (context, index) {
-                                  return TweenAnimationBuilder<double>(
-                                    tween: Tween(begin: 0.0, end: 1.0),
-                                    duration: Duration(
-                                      milliseconds: 300 + (index * 100),
-                                    ),
-                                    curve: AppAnimations.defaultCurve,
-                                    builder: (context, value, child) {
-                                      return Opacity(
-                                        opacity: value,
-                                        child: Transform.scale(
-                                          scale: 0.9 + (value * 0.1),
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: SizedBox(
-                                      width: 180,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(right: 16.0),
-                                        child: ProductCard(
-                                          product: _similarProducts[index],
-                                          onTap: () {
-                                            Navigator.pushReplacement(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    ProductDetailsPage(
-                                                  product: _similarProducts[index],
-                                                ),
-                                              ),
-                                            );
-                                          },
+                                color: isUserReview
+                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.05)
+                                    : AppTheme.warmWhite,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 24,
+                                        backgroundColor: isUserReview
+                                            ? Theme.of(context).colorScheme.primary
+                                            : AppTheme.accentTerracotta,
+                                        child: Text(
+                                          review.userName.isNotEmpty
+                                              ? review.userName[0].toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 80),
-                    ],
-                  ],
-                ),
-              ),
-              
-              // Reviews Tab
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    if (_isLoadingReviews)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      )
-                    else if (_reviews.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.rate_review_outlined,
-                                  size: 40,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No reviews yet',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Be the first to review!',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).textTheme.bodyMedium!.color!,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      ListView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: _reviews.length,
-                        itemBuilder: (context, index) {
-                          final review = _reviews[index];
-                          final isUserReview = _currentUserId != null &&
-                              review.userId == _currentUserId;
-                          return TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            duration: Duration(milliseconds: 200 + (index * 50)),
-                            curve: AppAnimations.defaultCurve,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Transform.translate(
-                                  offset: Offset(0, 20 * (1 - value)),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              elevation: 1,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              color: isUserReview
-                                  ? Theme.of(context).colorScheme.primary.withOpacity(0.05)
-                                  : AppTheme.warmWhite,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor: isUserReview
-                                          ? Theme.of(context).colorScheme.primary
-                                          : AppTheme.accentTerracotta,
-                                      child: Text(
-                                        review.userName.isNotEmpty
-                                            ? review.userName[0].toUpperCase()
-                                            : '?',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  review.userName +
-                                                      (isUserReview
-                                                          ? ' (You)'
-                                                          : ''),
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .titleMedium
-                                                      ?.copyWith(
-                                                    fontWeight: FontWeight.bold,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    review.userName +
+                                                        (isUserReview
+                                                            ? ' (You)'
+                                                            : ''),
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleMedium
+                                                        ?.copyWith(
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
                                                   ),
                                                 ),
+                                                Text(
+                                                  '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall,
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: List.generate(
+                                                5,
+                                                (starIndex) => Icon(
+                                                  starIndex < review.rating
+                                                      ? Icons.star_rounded
+                                                      : Icons.star_border_rounded,
+                                                  size: 16,
+                                                  color: const Color(0xFFD4A574),
+                                                ),
                                               ),
+                                            ),
+                                            if (review.comment != null &&
+                                                review.comment!.isNotEmpty) ...[
+                                              const SizedBox(height: 8),
                                               Text(
-                                                '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
+                                                review.comment!,
                                                 style: Theme.of(context)
                                                     .textTheme
-                                                    .bodySmall,
+                                                    .bodyMedium
+                                                    ?.copyWith(
+                                                  color: Theme.of(context).textTheme.bodyMedium!.color!,
+                                                  height: 1.5,
+                                                ),
                                               ),
                                             ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            children: List.generate(
-                                              5,
-                                              (starIndex) => Icon(
-                                                starIndex < review.rating
-                                                    ? Icons.star_rounded
-                                                    : Icons.star_border_rounded,
-                                                size: 16,
-                                                color: Color(0xFFD4A574),
-                                              ),
-                                            ),
-                                          ),
-                                          if (review.comment != null &&
-                                              review.comment!.isNotEmpty) ...[
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              review.comment!,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                color: Theme.of(context).textTheme.bodyMedium!.color!,
-                                                height: 1.5,
-                                              ),
-                                            ),
                                           ],
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    const SizedBox(height: 80),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          ),
-        ),
-        floatingActionButton: (_currentUserId != null &&
-                _currentUserId == _product.vendorId)
-            ? null
-            : TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: AppAnimations.slow,
-                curve: AppAnimations.bounceCurve,
-                builder: (context, value, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: FloatingActionButton.extended(
-                      onPressed: _showAddReviewDialog,
-                      backgroundColor: AppTheme.accentTerracotta,
-                      icon: Icon(
-                        _userReview != null
-                            ? Icons.edit_outlined
-                            : Icons.rate_review_outlined,
-                        color: Colors.white,
-                      ),
-                      label: Text(
-                        _userReview != null ? 'Edit Review' : 'Write Review',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-        bottomNavigationBar: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: AppAnimations.medium,
-          curve: AppAnimations.defaultCurve,
-          builder: (context, value, child) {
-            return Opacity(
-              opacity: value,
-              child: Transform.translate(
-                offset: Offset(0, 20 * (1 - value)),
-                child: child,
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.warmWhite,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  spreadRadius: 1,
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: _cartItem != null
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppTheme.softBeige,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: _isLoadingCart
-                                      ? null
-                                      : () => _updateCartQuantity(false),
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    width: 48,
-                                    height: 48,
-                                    alignment: Alignment.center,
-                                    child: Icon(
-                                      Icons.remove_rounded,
-                                      color: Theme.of(context).colorScheme.error,
-                                    ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              Container(
-                                width: 50,
-                                alignment: Alignment.center,
-                                child: Text(
-                                  _cartItem != null
-                                      ? '${_cartItem!.quantity % 1 == 0 ? _cartItem!.quantity.toInt() : _cartItem!.quantity}'
-                                      : '0',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
-                                      ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: _isLoadingCart
-                                      ? null
-                                      : () => _updateCartQuantity(true),
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    width: 48,
-                                    height: 48,
-                                    alignment: Alignment.center,
-                                    child: Icon(
-                                      Icons.add_rounded,
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.softBeige,
-                                foregroundColor: Theme.of(context).colorScheme.onSurface,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              child: const Text('Continue Shopping'),
-                            ),
-                          ),
-                        ),
                       ],
-                    )
-                  : ElevatedButton.icon(
-                      onPressed: (_currentUserId != null &&
-                                  _currentUserId == _product.vendorId) ||
-                              _product.stockQuantity <= 0
-                          ? null
-                          : _addToCart,
-                      icon: _isLoadingCart
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Icon(Icons.shopping_cart_rounded),
-                      label: Text(
-                        (_currentUserId != null &&
-                                _currentUserId == _product.vendorId)
-                            ? 'Your Product'
-                            : (_product.stockQuantity <= 0
-                                ? 'Out of Stock'
-                                : 'Add $_selectedUnitName to Cart'),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        backgroundColor: _product.stockQuantity <= 0
-                            ? Theme.of(context).textTheme.bodySmall!.color!
-                            : AppTheme.accentTerracotta,
-                        disabledBackgroundColor: Theme.of(context).textTheme.bodySmall!.color!,
-                        foregroundColor: Colors.white,
-                        disabledForegroundColor: Colors.white70,
-                      ),
                     ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
-    ),
+      ),
+      floatingActionButton: (_tabController.index == 1 && 
+              _currentUserId != null &&
+              _currentUserId != _product.vendorId)
+          ? TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: AppAnimations.slow,
+              curve: AppAnimations.bounceCurve,
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: value,
+                  child: FloatingActionButton.extended(
+                    onPressed: _showAddReviewDialog,
+                    backgroundColor: AppTheme.accentTerracotta,
+                    icon: Icon(
+                      _userReview != null
+                          ? Icons.edit_outlined
+                          : Icons.rate_review_outlined,
+                    ),
+                    label: Text(_userReview != null
+                        ? 'Edit'
+                        : 'Write a Review'),
+                  ),
+                );
+              },
+            ) : null,
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.warmWhite,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: _cartItem != null
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('In Cart: ${_cartItem!.quantity}'),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Continue Shopping'),
+                    ),
+                  ],
+                )
+              : ElevatedButton(
+                  onPressed: _product.stockQuantity <= 0 ? null : _addToCart,
+                  child: Text(_product.stockQuantity <= 0 ? 'Out of Stock' : 'Add to Cart'),
+                ),
+        ),
+      ),
     );
-  }
-}
-
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar _tabBar;
-
-  _SliverAppBarDelegate(this._tabBar);
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: AppTheme.warmWhite,
-      child: _tabBar,
-    );
-  }
-
-  @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return false;
   }
 }
