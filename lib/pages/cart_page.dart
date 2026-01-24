@@ -114,7 +114,7 @@ class _CartPageState extends State<CartPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.softBeige,
+      // backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
         title: const Text('My Cart'),
         elevation: 0,

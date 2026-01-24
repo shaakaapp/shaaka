@@ -43,7 +43,12 @@ class _AddProductPageState extends State<AddProductPage> {
     'Tiffins', 
     'Drinks', 
     'Desserts', 
-    'Others'
+    'Millets',
+    'Pulses',
+    'Flours',
+    'Tea Powders',
+    'Rice',
+    'Oils'
   ];
 
   String _selectedUnit = 'kg';
@@ -64,6 +69,10 @@ class _AddProductPageState extends State<AddProductPage> {
   final List<XFile> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
 
+  // Variant Logic
+  bool _hasVariants = false;
+  List<Map<String, dynamic>> _variantsList = []; // {quantity, unit, price}
+
   @override
   void initState() {
     super.initState();
@@ -82,6 +91,18 @@ class _AddProductPageState extends State<AddProductPage> {
       // Load existing images
       for (var img in widget.product!.images) {
           _existingImageUrls.add(img.imageUrl);
+      }
+      
+      // Load Variants
+      if (widget.product!.variants.isNotEmpty) {
+        _hasVariants = true;
+        for (var v in widget.product!.variants) {
+          _variantsList.add({
+            'quantity': v.quantity,
+            'unit': v.unit,
+            'price': v.price,
+          });
+        }
       }
     }
   }
@@ -168,6 +189,18 @@ class _AddProductPageState extends State<AddProductPage> {
       'images': allImageUrls,
     };
 
+    if (_hasVariants) {
+      productData['variants'] = _variantsList;
+      // Use first variant as default price display or keep main price as base price?
+      // Backend model requires 'price', so we should ensure main price is set or derived.
+      // If user didn't enter main price in variant mode, maybe pick the first variant's price?
+      if (_priceController.text.isEmpty && _variantsList.isNotEmpty) {
+         productData['price'] = _variantsList.first['price'];
+         // Also set dummy values for required fields if hidden
+         productData['stock_quantity'] = productData['stock_quantity'] ?? 0;
+      }
+    }
+
     Map<String, dynamic> result;
     if (widget.product != null) {
         result = await ApiService.updateProduct(widget.product!.id, productData);
@@ -224,34 +257,139 @@ class _AddProductPageState extends State<AddProductPage> {
               ),
               const SizedBox(height: 16),
               
+              const SizedBox(height: 16),
+
+              // Pricing Toggle
               Row(
                 children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _priceController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                          labelText: 'Price (₹) *',
-                          border: OutlineInputBorder()),
-                      validator: (val) =>
-                          val == null || val.isEmpty ? 'Required' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedUnit,
-                      items: _units
-                          .map((u) => DropdownMenuItem(value: u, child: Text(u)))
-                          .toList(),
-                      onChanged: (val) => setState(() => _selectedUnit = val!),
-                      decoration: const InputDecoration(
-                          labelText: 'Unit *', border: OutlineInputBorder()),
-                    ),
-                  ),
+                   const Text('Pricing Type: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                   Radio<bool>(
+                     value: false, 
+                     groupValue: _hasVariants, 
+                     onChanged: (val) => setState(() => _hasVariants = val!),
+                   ),
+                   const Text('Standard'),
+                   Radio<bool>(
+                     value: true, 
+                     groupValue: _hasVariants, 
+                     onChanged: (val) => setState(() => _hasVariants = val!),
+                   ),
+                   const Text('Tiered (Variants)'),
                 ],
               ),
+              const SizedBox(height: 8),
+
+              if (!_hasVariants) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _priceController,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(
+                              labelText: 'Price (₹) *',
+                              border: OutlineInputBorder()),
+                          validator: (val) =>
+                              !_hasVariants && (val == null || val.isEmpty) ? 'Required' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedUnit,
+                          items: _units
+                              .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                              .toList(),
+                          onChanged: (val) => setState(() => _selectedUnit = val!),
+                          decoration: const InputDecoration(
+                              labelText: 'Unit *', border: OutlineInputBorder()),
+                        ),
+                      ),
+                    ],
+                  ),
+              ] else ...[
+                  // Variants UI
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.withOpacity(0.5)),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.grey[50],
+                    ),
+                    child: Column(
+                      children: [
+                         ..._variantsList.asMap().entries.map((entry) {
+                           int idx = entry.key;
+                           Map<String, dynamic> variant = entry.value;
+                           return Padding(
+                             padding: const EdgeInsets.only(bottom: 8.0),
+                             child: Row(
+                               children: [
+                                 Expanded(
+                                   flex: 2,
+                                   child: TextFormField(
+                                     initialValue: variant['quantity'].toString(),
+                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                     decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
+                                     onChanged: (val) => variant['quantity'] = double.tryParse(val) ?? 0,
+                                   ),
+                                 ),
+                                 const SizedBox(width: 8),
+                                 Expanded(
+                                   flex: 2,
+                                   child: DropdownButtonFormField<String>(
+                                     value: _units.contains(variant['unit']) ? variant['unit'] : _units.first,
+                                     isExpanded: true,
+                                     decoration: const InputDecoration(
+                                       labelText: 'Unit', 
+                                       isDense: true, 
+                                       contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                       border: OutlineInputBorder()
+                                     ),
+                                     items: _units.map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
+                                     onChanged: (val) => variant['unit'] = val,
+                                   ),
+                                 ),
+                                 const SizedBox(width: 8),
+                                 Expanded(
+                                   flex: 2,
+                                   child: TextFormField(
+                                     initialValue: variant['price'].toString(),
+                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                     decoration: const InputDecoration(labelText: 'Price', isDense: true, border: OutlineInputBorder()),
+                                     onChanged: (val) => variant['price'] = double.tryParse(val) ?? 0,
+                                   ),
+                                 ),
+                                 IconButton(
+                                   icon: const Icon(Icons.delete, color: Colors.red),
+                                   onPressed: () => setState(() => _variantsList.removeAt(idx)),
+                                 ),
+                               ],
+                             ),
+                           );
+                         }).toList(),
+                         
+                         OutlinedButton.icon(
+                           onPressed: () {
+                             setState(() {
+                               _variantsList.add({'quantity': 1, 'unit': 'kg', 'price': 0});
+                             });
+                           },
+                           icon: const Icon(Icons.add),
+                           label: const Text('Add Variant'),
+                         ),
+                      ],
+                    ),
+                  ),
+                  // Hidden Price Controller for base price logic if needed, 
+                  // or we enforce at least one variant and use its price.
+                  if (_variantsList.isEmpty)
+                     const Padding(
+                       padding: EdgeInsets.only(top: 4.0),
+                       child: Text('Please add at least one variant', style: TextStyle(color: Colors.red, fontSize: 12)),
+                     ),
+              ],
               const SizedBox(height: 16),
               
               TextFormField(

@@ -219,27 +219,30 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
                        ),
                      ),
                      const SizedBox(height: 24),
-                     Row(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: List.generate(5, (index) {
-                         return Material(
-                           color: Colors.transparent,
-                           child: InkWell(
-                             onTap: () => setStateDialog(() => rating = index + 1),
-                             borderRadius: BorderRadius.circular(24),
-                             child: Padding(
-                               padding: const EdgeInsets.all(8.0),
-                               child: Icon(
-                                 index < rating
-                                     ? Icons.star_rounded
-                                     : Icons.star_border_rounded,
-                                 color: const Color(0xFFD4A574),
-                                 size: 40,
+                     FittedBox(
+                       fit: BoxFit.scaleDown,
+                       child: Row(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: List.generate(5, (index) {
+                           return Material(
+                             color: Colors.transparent,
+                             child: InkWell(
+                               onTap: () => setStateDialog(() => rating = index + 1),
+                               borderRadius: BorderRadius.circular(24),
+                               child: Padding(
+                                 padding: const EdgeInsets.all(8.0),
+                                 child: Icon(
+                                   index < rating
+                                       ? Icons.star_rounded
+                                       : Icons.star_border_rounded,
+                                   color: const Color(0xFFD4A574),
+                                   size: 40,
+                                 ),
                                ),
                              ),
-                           ),
-                         );
-                       }),
+                           );
+                         }),
+                       ),
                      ),
                      const SizedBox(height: 24),
                      TextField(
@@ -310,27 +313,30 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
                        ),
                      ),
                      const SizedBox(height: 24),
-                     Row(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: List.generate(5, (index) {
-                         return Material(
-                           color: Colors.transparent,
-                           child: InkWell(
-                             onTap: () => setStateDialog(() => rating = index + 1),
-                             borderRadius: BorderRadius.circular(24),
-                             child: Padding(
-                               padding: const EdgeInsets.all(8.0),
-                               child: Icon(
-                                 index < rating
-                                     ? Icons.star_rounded
-                                     : Icons.star_border_rounded,
-                                 color: const Color(0xFFD4A574),
-                                 size: 40,
+                     FittedBox(
+                       fit: BoxFit.scaleDown,
+                       child: Row(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: List.generate(5, (index) {
+                           return Material(
+                             color: Colors.transparent,
+                             child: InkWell(
+                               onTap: () => setStateDialog(() => rating = index + 1),
+                               borderRadius: BorderRadius.circular(24),
+                               child: Padding(
+                                 padding: const EdgeInsets.all(8.0),
+                                 child: Icon(
+                                   index < rating
+                                       ? Icons.star_rounded
+                                       : Icons.star_border_rounded,
+                                   color: const Color(0xFFD4A574),
+                                   size: 40,
+                                 ),
                                ),
                              ),
-                           ),
-                         );
-                       }),
+                           );
+                         }),
+                       ),
                      ),
                      const SizedBox(height: 24),
                      TextField(
@@ -457,7 +463,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
     print('ProductDetailsPage build called');
     
     return Scaffold(
-      backgroundColor: AppTheme.softBeige,
+      // backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
         title: Text(_product.name),
         backgroundColor: AppTheme.warmWhite,
@@ -603,9 +609,33 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
                   ),
                   const SizedBox(height: 16),
 
-                  Text(
-                    'Stock: ${_product.stockQuantity}',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  Row(
+                    children: [
+                      Text(
+                        'Status: ',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _product.stockQuantity > 0 
+                            ? AppTheme.successGreen.withOpacity(0.1) 
+                            : AppTheme.errorRed.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _product.stockQuantity > 0 ? 'In Stock' : 'Out of Stock',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: _product.stockQuantity > 0 
+                              ? AppTheme.successGreen 
+                              : AppTheme.errorRed,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(

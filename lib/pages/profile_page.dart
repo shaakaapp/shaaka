@@ -291,7 +291,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.softBeige,
+      // backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
         title: Text(widget.isCompletingProfile ? 'Complete Profile' : 'Profile'),
         automaticallyImplyLeading: !widget.isCompletingProfile,
@@ -541,6 +541,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         prefixIcon: Icon(Icons.public),
                         border: OutlineInputBorder(),
                       ),
+                      isExpanded: true,
                       items: LocationData.countryStateMap.keys
                           .map((country) => DropdownMenuItem(
                                 value: country,
@@ -570,6 +571,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         prefixIcon: Icon(Icons.map),
                         border: OutlineInputBorder(),
                       ),
+                      isExpanded: true,
                       items: _selectedCountry != null
                           ? LocationData.countryStateMap[_selectedCountry]!
                               .map((state) => DropdownMenuItem(

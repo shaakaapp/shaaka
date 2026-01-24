@@ -338,7 +338,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.softBeige,
+      // backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
         title: const Text('Register'),
         elevation: 0,

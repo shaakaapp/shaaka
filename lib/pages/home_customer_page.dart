@@ -60,7 +60,7 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
         return true;
       },
       child: Scaffold(
-        backgroundColor: AppTheme.softBeige,
+        // backgroundColor: AppTheme.softBeige,
         appBar: AppBar(
           title: Row(
             children: [

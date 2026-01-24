@@ -488,7 +488,7 @@ class _StorePageState extends State<StorePage> {
           ),
         ),
         SizedBox(
-          height: 280, // Height for ProductCard + Padding
+          height: 185, // Height for ProductCard + Padding
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
@@ -496,7 +496,7 @@ class _StorePageState extends State<StorePage> {
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               return SizedBox(
-                width: 180, // Fixed width for horizontal card
+                width: 110, // Fixed width for horizontal card
                 child: ProductCard(
                   product: products[index],
                   onTap: () {

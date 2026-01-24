@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 import 'widgets/connectivity_wrapper.dart';
+import 'widgets/animated_background.dart';
 import 'theme/app_theme.dart';
 
 import 'pages/home_customer_page.dart';
@@ -66,13 +67,24 @@ class _MyAppState extends State<MyApp> {
       title: 'Shaaka',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+
+      // 🔥 FORCE BACKGROUND TRANSPARENT FOR ANIMATION
+      theme: AppTheme.lightTheme.copyWith(
+        scaffoldBackgroundColor: Colors.transparent,
+      ),
+
+      darkTheme: AppTheme.darkTheme.copyWith(
+        scaffoldBackgroundColor: Colors.transparent, 
+      ),
+
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+
       builder: (context, child) {
-        return ConnectivityWrapper(child: child!);
+        return AnimatedBackground(
+          child: ConnectivityWrapper(child: child!),
+        );
       },
-      // initialRoute: '/login', // REMOVED
+
       home: const AuthCheck(),
       routes: {
         '/login': (context) => const LoginPage(),
@@ -80,6 +92,7 @@ class _MyAppState extends State<MyApp> {
       },
     );
   }
+
 }
 
 class AuthCheck extends StatefulWidget {

@@ -198,7 +198,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.softBeige,
+      // backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
         title: const Text('Checkout'),
         elevation: 0,

@@ -41,6 +41,29 @@ class ProductReview {
   }
 }
 
+class ProductVariant {
+  final int id;
+  final double quantity;
+  final String unit;
+  final double price;
+
+  ProductVariant({
+    required this.id,
+    required this.quantity,
+    required this.unit,
+    required this.price,
+  });
+
+  factory ProductVariant.fromJson(Map<String, dynamic> json) {
+    return ProductVariant(
+      id: json['id'],
+      quantity: double.tryParse(json['quantity'].toString()) ?? 0.0,
+      unit: json['unit'] ?? '',
+      price: double.tryParse(json['price'].toString()) ?? 0.0,
+    );
+  }
+}
+
 class Product {
   final int id;
   final int vendorId;
@@ -54,6 +77,7 @@ class Product {
   final double averageRating;
   final int ratingCount;
   final List<ProductImage> images;
+  final List<ProductVariant> variants;
 
   Product({
     required this.id,
@@ -68,6 +92,7 @@ class Product {
     this.averageRating = 0.0,
     this.ratingCount = 0,
     this.images = const [],
+    this.variants = const [],
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -85,6 +110,10 @@ class Product {
       ratingCount: int.tryParse(json['rating_count'].toString()) ?? 0,
       images: (json['images'] as List?)
               ?.map((i) => ProductImage.fromJson(i))
+              .toList() ??
+          [],
+      variants: (json['variants'] as List?)
+              ?.map((v) => ProductVariant.fromJson(v))
               .toList() ??
           [],
     );
