@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from users.models import UserProfile
-from products.models import Product
+from products.models import Product, ProductVariant
 
 class Cart(models.Model):
     user = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='cart')
@@ -30,6 +30,14 @@ class CartItem(models.Model):
 
     @property
     def total_price(self):
+        # Specific Variant Price
+        variant = ProductVariant.objects.filter(product=self.product, quantity=self.unit_value).first()
+        if variant:
+            # For tiered, quantity is Count. Price is per item.
+            return self.quantity * variant.price
+        
+        # Standard Price (Quantity is likely Weight/Volume if unit_value=1, or Count*Size)
+        # Assuming standard behavior: quantity * unit_value * price_per_base_unit
         return self.quantity * self.unit_value * self.product.price
 
 class Order(models.Model):
