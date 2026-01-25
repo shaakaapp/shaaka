@@ -7,6 +7,7 @@ class CartItem {
   final String unit;
   double quantity; // This is now Count
   final double unitValue; // This is size (e.g. 0.25)
+  final double totalPrice;
   final double stockQuantity;
 
   CartItem({

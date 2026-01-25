@@ -5,6 +5,8 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 from .models import Cart, CartItem, Order, OrderItem
 from products.models import Product, ProductVariant
+from users.models import UserProfile
+from .serializers import CartSerializer, OrderSerializer
 
 @api_view(['GET'])
 def get_cart(request, user_id):
