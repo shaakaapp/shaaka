@@ -184,11 +184,17 @@ def place_order(request, user_id):
                 variant.stock_quantity = float(variant.stock_quantity) - deduction_quantity
                 variant.save()
                 
-                # Also optionally update global stock? User said "dont use the normal standard thing at all".
-                # So we leave global stock alone or update it as a sum?
-                # Updating it as sum is safer for "Add Product" page to show correct total.
-                item.product.stock_quantity = float(item.product.stock_quantity) - deduction_quantity # Assuming global stock was sum of variants
+                # Update global stock as sum (approximate)
+                item.product.stock_quantity = float(item.product.stock_quantity) - deduction_quantity 
                 item.product.save()
+
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    product_name=f"{item.product.name} ({variant.quantity} {variant.unit})",
+                    quantity=deduction_quantity, 
+                    price_at_purchase=variant.price
+                )
 
             else:
                 # Standard: Deduct Volume from Product
@@ -200,18 +206,13 @@ def place_order(request, user_id):
                 item.product.stock_quantity = float(item.product.stock_quantity) - deduction_quantity
                 item.product.save()
             
-            OrderItem.objects.create(
-                order=order,
-                product=item.product,
-                product_name=item.product.name,
-                quantity=float(item.quantity) * float(item.unit_value), # Standardized quantity for record? Or just raw?
-                price_at_purchase=item.product.price # Note: For tiered, this might be wrong if price is on variant!
-                # Wait, item.product.price comes from Product model.
-                # If tiered, price depends on variant.
-                # CartItem doesn't seem to store price.
-                # Cart.total_price property calculates it.
-                # OrderItem needs correct price.
-            )
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    product_name=item.product.name,
+                    quantity=deduction_quantity, 
+                    price_at_purchase=item.product.price
+                )
             
             # Additional Fix for OrderItem Price:
             # If variant, we should use variant price.
