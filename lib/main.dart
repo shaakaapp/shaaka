@@ -10,6 +10,8 @@ import 'pages/home_vendor_page.dart';
 import 'pages/home_women_merchant_page.dart';
 import 'services/storage_service.dart';
 
+import 'package:flutter/services.dart';
+
 // Global key for Navigator state
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -17,6 +19,13 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void Function(bool)? onThemeUpdateCallback;
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+  ));
   runApp(const MyApp());
 }
 

@@ -7,6 +7,7 @@ class Donation(models.Model):
         ('Food', 'Food'),
         ('Clothes', 'Clothes'),
         ('Money', 'Money'),
+        ('Education', 'Education'),
     ]
 
     STATUS_CHOICES = [
@@ -23,10 +24,10 @@ class Donation(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
     # Fields for Food/Clothes
-    item_name = models.CharField(max_length=255, blank=True, null=True)
-    description = models.TextField()
+    item_name = models.CharField(max_length=255, blank=True, null=True) # Also used for Education Name
+    description = models.TextField(blank=True, null=True)
     quantity = models.CharField(max_length=100, blank=True, null=True) # e.g., "5 kg", "2 bags"
-    item_image = models.ImageField(upload_to='donations/items/')
+    item_image = models.ImageField(upload_to='donations/items/', blank=True, null=True)
     pickup_address = models.TextField(blank=True, null=True)
     contact_number = models.CharField(max_length=20, blank=True, null=True)
     email = models.CharField(max_length=255, blank=True, null=True)
@@ -35,6 +36,12 @@ class Donation(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     payment_screenshot = models.ImageField(upload_to='donations/payments/', blank=True, null=True)
     message = models.TextField(blank=True, null=True) # Message for money donation
+    
+    # Fields for Education
+    profession = models.CharField(max_length=255, blank=True, null=True)
+    subject = models.CharField(max_length=255, blank=True, null=True)
+    time_slot = models.DateTimeField(blank=True, null=True)
+    duration = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         db_table = 'donations'

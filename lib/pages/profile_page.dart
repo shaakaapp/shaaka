@@ -282,7 +282,26 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_userProfile == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Profile'),
+          title: Row(
+            children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/images/logo.jpg',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('Profile'),
+            ],
+          ),
         ),
         body: const Center(
           child: Text('Failed to load profile'),
@@ -293,7 +312,26 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       // backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
-        title: Text(widget.isCompletingProfile ? 'Complete Profile' : 'Profile'),
+        title: Row(
+            children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/images/logo.jpg',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(widget.isCompletingProfile ? 'Complete Profile' : 'Profile'),
+            ],
+        ),
         automaticallyImplyLeading: !widget.isCompletingProfile,
         elevation: 0,
         actions: [

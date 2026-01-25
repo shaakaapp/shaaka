@@ -146,10 +146,12 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ],
                             ),
-                            child: const Icon(
-                              Icons.eco,
-                              color: Colors.white,
-                              size: 40,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.asset(
+                                'assets/images/logo.jpg',
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                         ),

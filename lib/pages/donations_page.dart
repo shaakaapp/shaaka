@@ -14,7 +14,7 @@ class DonationsPage extends StatefulWidget {
 class _DonationsPageState extends State<DonationsPage> {
   final _formKey = GlobalKey<FormState>();
   String _selectedType = 'Food';
-  final List<String> _donationTypes = ['Food', 'Clothes', 'Money'];
+  final List<String> _donationTypes = ['Food', 'Clothes', 'Money', 'Education'];
   bool _isLoading = false;
 
   // Controllers
@@ -26,6 +26,14 @@ class _DonationsPageState extends State<DonationsPage> {
   final _emailController = TextEditingController();
   final _amountController = TextEditingController();
   final _messageController = TextEditingController();
+
+  // Education Controllers
+  final _nameController = TextEditingController();
+  final _professionController = TextEditingController();
+  final _subjectController = TextEditingController();
+  final _durationController = TextEditingController();
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
 
   XFile? _selectedImage;
   final ImagePicker _picker = ImagePicker();
@@ -40,6 +48,11 @@ class _DonationsPageState extends State<DonationsPage> {
     _emailController.dispose();
     _amountController.dispose();
     _messageController.dispose();
+    
+    _nameController.dispose();
+    _professionController.dispose();
+    _subjectController.dispose();
+    _durationController.dispose();
     super.dispose();
   }
 
@@ -50,10 +63,32 @@ class _DonationsPageState extends State<DonationsPage> {
     });
   }
 
+  Future<void> _selectDateTime(BuildContext context) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
+    );
+    if (pickedDate != null) {
+      if (!mounted) return;
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+      if (pickedTime != null) {
+        setState(() {
+          _selectedDate = pickedDate;
+          _selectedTime = pickedTime;
+        });
+      }
+    }
+  }
+
   Future<void> _submitDonation() async {
     if (!_formKey.currentState!.validate()) return;
     
-    if (_selectedImage == null) {
+    if (_selectedType != 'Education' && _selectedImage == null) {
        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please upload an image')));
        return;
     }
@@ -78,12 +113,39 @@ class _DonationsPageState extends State<DonationsPage> {
       fields['pickup_address'] = _pickupAddressController.text.trim();
       fields['contact_number'] = _contactNumberController.text.trim();
       fields['email'] = _emailController.text.trim();
+    } else if (_selectedType == 'Education') {
+      fields['item_name'] = _nameController.text.trim();
+      fields['profession'] = _professionController.text.trim();
+      fields['subject'] = _subjectController.text.trim();
+      fields['duration'] = _durationController.text.trim();
+      fields['contact_number'] = _contactNumberController.text.trim();
+      fields['email'] = _emailController.text.trim();
+      
+      if (_selectedDate != null && _selectedTime != null) {
+         final dt = DateTime(
+           _selectedDate!.year, 
+           _selectedDate!.month, 
+           _selectedDate!.day, 
+           _selectedTime!.hour, 
+           _selectedTime!.minute
+         );
+         fields['time_slot'] = dt.toIso8601String();
+      } else {
+         if (!mounted) return;
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a time slot')));
+         setState(() => _isLoading = false);
+         return;
+      }
+
     } else {
       fields['amount'] = _amountController.text.trim();
       fields['message'] = _messageController.text.trim();
     }
 
-    final result = await ApiService.createDonation(userId, fields, _selectedImage);
+    // Pass null image for Education as it's not strictly required in the UI flow (unless we want a profile pic?)
+    // The previous code required image for everything. I relaxed it for Education above.
+    // If API expects image, we might need to handle it. Assuming generic donation endpoint handles optional image.
+    final result = await ApiService.createDonation(userId, fields, _selectedType == 'Education' ? null : _selectedImage);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -141,6 +203,8 @@ class _DonationsPageState extends State<DonationsPage> {
                      setState(() {
                         _selectedType = val;
                         _selectedImage = null; // Reset image on type change
+                        _selectedDate = null;
+                        _selectedTime = null;
                      });
                   }
                 },
@@ -180,6 +244,13 @@ class _DonationsPageState extends State<DonationsPage> {
                    keyboardType: TextInputType.phone,
                  ),
                  const SizedBox(height: 16),
+                 TextFormField(
+                   controller: _emailController,
+                   decoration: const InputDecoration(labelText: 'Email *', border: OutlineInputBorder()),
+                   validator: (v) => v!.isEmpty ? 'Required' : null,
+                   keyboardType: TextInputType.emailAddress,
+                 ),
+                 const SizedBox(height: 16),
                  // Image Upload
                  GestureDetector(
                    onTap: _pickImage,
@@ -188,6 +259,7 @@ class _DonationsPageState extends State<DonationsPage> {
                      decoration: BoxDecoration(
                        border: Border.all(color: Colors.grey),
                        borderRadius: BorderRadius.circular(8),
+                       color: Colors.grey[100],
                      ),
                      child: _selectedImage != null
                        ? Image.file(File(_selectedImage!.path), fit: BoxFit.cover)
@@ -200,6 +272,65 @@ class _DonationsPageState extends State<DonationsPage> {
                          ),
                    ),
                  ),
+
+              ] else if (_selectedType == 'Education') ...[
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(labelText: 'Name *', border: OutlineInputBorder()),
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _professionController,
+                    decoration: const InputDecoration(labelText: 'Profession *', border: OutlineInputBorder()),
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _subjectController,
+                    decoration: const InputDecoration(labelText: 'Subject *', border: OutlineInputBorder()),
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  // TimeSlot Picker
+                  InkWell(
+                    onTap: () => _selectDateTime(context),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Time Slot (Calendar) *',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.calendar_today),
+                      ),
+                      child: Text(
+                        _selectedDate != null && _selectedTime != null
+                            ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year} at ${_selectedTime!.format(context)}'
+                            : 'Select Date & Time',
+                        style: TextStyle(
+                          color: _selectedDate != null ? Colors.black : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _durationController,
+                    decoration: const InputDecoration(labelText: 'Duration * (e.g., 1 hour)', border: OutlineInputBorder()),
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                   TextFormField(
+                    controller: _contactNumberController,
+                    decoration: const InputDecoration(labelText: 'Contact Number *', border: OutlineInputBorder()),
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(labelText: 'Email *', border: OutlineInputBorder()),
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
 
               ] else ...[
                  // Money Donation
@@ -243,6 +374,7 @@ class _DonationsPageState extends State<DonationsPage> {
                      decoration: BoxDecoration(
                        border: Border.all(color: Colors.grey),
                        borderRadius: BorderRadius.circular(8),
+                       color: Colors.grey[100],
                      ),
                      child: _selectedImage != null
                        ? Image.file(File(_selectedImage!.path), fit: BoxFit.cover)

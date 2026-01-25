@@ -262,7 +262,26 @@ class _AddProductPageState extends State<AddProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.product != null ? 'Edit Product' : 'Add Product')),
+      appBar: AppBar(title: Row(
+        children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  'assets/images/logo.jpg',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(widget.product != null ? 'Edit Product' : 'Add Product'),
+        ],
+      )),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -293,15 +312,17 @@ class _AddProductPageState extends State<AddProductPage> {
               const SizedBox(height: 16),
 
               // Pricing Toggle
+              // Pricing Type Selection
+              const Text('Pricing Type: ', style: TextStyle(fontWeight: FontWeight.bold)),
               Row(
                 children: [
-                   const Text('Pricing Type: ', style: TextStyle(fontWeight: FontWeight.bold)),
                    Radio<bool>(
                      value: false, 
                      groupValue: _hasVariants, 
                      onChanged: (val) => setState(() => _hasVariants = val!),
                    ),
                    const Text('Standard'),
+                   const SizedBox(width: 16), // Spacing between options
                    Radio<bool>(
                      value: true, 
                      groupValue: _hasVariants, 

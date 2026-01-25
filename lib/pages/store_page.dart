@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/api_service.dart';
@@ -8,6 +9,7 @@ import '../theme/app_theme.dart';
 import 'product_details_page.dart';
 import 'add_product_page.dart';
 import 'search_page.dart';
+import 'category_products_page.dart';
 
 class StorePage extends StatefulWidget {
   final bool isVendorView;
@@ -477,7 +479,14 @@ class _StorePageState extends State<StorePage> {
               ),
               TextButton(
                 onPressed: () {
-                  // TODO: Navigate to category view
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => CategoryProductsPage(
+                        category: category,
+                        products: products,
+                      ),
+                    ),
+                  );
                 },
                 child: Text(
                   'See all',

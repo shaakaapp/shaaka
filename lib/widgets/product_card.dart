@@ -147,16 +147,19 @@ class _ProductCardState extends State<ProductCard> {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                 Text(
-                    widget.product.variants.isNotEmpty
-                      ? 'From ₹${widget.product.variants.map((v) => v.price).reduce((a, b) => a < b ? a : b)}'
-                      : '₹${widget.product.price}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color, // Adapt to theme
-                      fontSize: 11,
+                 Flexible(
+                   child: Text(
+                      widget.product.variants.isNotEmpty
+                        ? 'From ₹${widget.product.variants.map((v) => v.price).reduce((a, b) => a < b ? a : b)}'
+                        : '₹${widget.product.price}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge?.color, // Adapt to theme
+                        fontSize: 11,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                 ),
                  const SizedBox(width: 6),
                  // Add Button / Edit Button
                  if (widget.onEdit != null)

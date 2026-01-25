@@ -496,10 +496,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
     print('ProductDetailsPage build called');
     
     return Scaffold(
+      extendBodyBehindAppBar: true,
       // backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
-        title: Text(_product.name),
-        backgroundColor: AppTheme.warmWhite,
+        backgroundColor: Colors.transparent, // Make it transparent like a typical detail view? Or keep warmWhite?
+        // User said "only show the back button".
+        // If I make it transparent, it might overlap content if not handled (though scaffold body is typically below).
+        // Let's keep the background color for now but remove title.
+        // Actually, often detail pages have transparent app bar over image.
+        // But the previous code had warmWhite. I'll stick to removing the title content first.
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -507,7 +513,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
           children: [
             // Product Image Gallery
             SizedBox(
-              height: 400,
+              height: MediaQuery.of(context).size.height * 0.45,
               child: Stack(
                 children: [
                   _product.images.isNotEmpty
@@ -697,196 +703,238 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
               ),
             ),
 
-            // Tab Content
-            SizedBox(
-              height: 600,
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Description Tab
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Description',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+            // Tab Content (Dynamic Height)
+            AnimatedBuilder(
+              animation: _tabController,
+              builder: (context, _) {
+                 if (_tabController.index == 0) {
+                    // Description Tab
+                    return Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Description',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _product.description ?? 'No description available.',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Reviews Tab
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        if (_isLoadingReviews)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32.0),
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Theme.of(context).colorScheme.primary,
+                          const SizedBox(height: 12),
+                          Text(
+                            _product.description ?? 'No description available.',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
+                      ),
+                    );
+                 } else {
+                    // Reviews Tab
+                    return Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          if (_isLoadingReviews)
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32.0),
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).colorScheme.primary,
+                                  ),
                                 ),
                               ),
-                            ),
-                          )
-                        else if (_reviews.isEmpty)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32.0),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                      shape: BoxShape.circle,
+                            )
+                          else if (_reviews.isEmpty)
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32.0),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.rate_review_outlined,
+                                        size: 40,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
                                     ),
-                                    child: Icon(
-                                      Icons.rate_review_outlined,
-                                      size: 40,
-                                      color: Theme.of(context).colorScheme.primary,
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No reviews yet',
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No reviews yet',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Be the first to review!',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: Theme.of(context).textTheme.bodyMedium!.color!,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Be the first to review!',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Theme.of(context).textTheme.bodyMedium!.color!,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        else
-                          ListView.builder(
-                            physics: const NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount: _reviews.length,
-                            itemBuilder: (context, index) {
-                              final review = _reviews[index];
-                              final isUserReview = _currentUserId != null &&
-                                  review.userId == _currentUserId;
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                elevation: 1,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  ],
                                 ),
-                                color: isUserReview
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.05)
-                                    : AppTheme.warmWhite,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 24,
-                                        backgroundColor: isUserReview
-                                            ? Theme.of(context).colorScheme.primary
-                                            : AppTheme.accentTerracotta,
-                                        child: Text(
-                                          review.userName.isNotEmpty
-                                              ? review.userName[0].toUpperCase()
-                                              : '?',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          else
+                            ListView.builder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              itemCount: _reviews.length,
+                              itemBuilder: (context, index) {
+                                final review = _reviews[index];
+                                final isUserReview = _currentUserId != null &&
+                                    review.userId == _currentUserId;
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  elevation: 1,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  color: isUserReview
+                                      ? Theme.of(context).colorScheme.primary.withOpacity(0.05)
+                                      : AppTheme.warmWhite,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 24,
+                                          backgroundColor: isUserReview
+                                              ? Theme.of(context).colorScheme.primary
+                                              : AppTheme.accentTerracotta,
+                                          child: Text(
+                                            review.userName.isNotEmpty
+                                                ? review.userName[0].toUpperCase()
+                                                : '?',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    review.userName +
-                                                        (isUserReview
-                                                            ? ' (You)'
-                                                            : ''),
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .titleMedium
-                                                        ?.copyWith(
-                                                      fontWeight: FontWeight.bold,
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      review.userName +
+                                                          (isUserReview
+                                                              ? ' (You)'
+                                                              : ''),
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleMedium
+                                                          ?.copyWith(
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
                                                     ),
                                                   ),
+                                                  Text(
+                                                    '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodySmall,
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                children: List.generate(
+                                                  5,
+                                                  (starIndex) => Icon(
+                                                    starIndex < review.rating
+                                                        ? Icons.star_rounded
+                                                        : Icons.star_border_rounded,
+                                                    size: 16,
+                                                    color: const Color(0xFFD4A574),
+                                                  ),
                                                 ),
+                                              ),
+                                              if (review.comment != null &&
+                                                  review.comment!.isNotEmpty) ...[
+                                                const SizedBox(height: 8),
                                                 Text(
-                                                  '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
+                                                  review.comment!,
                                                   style: Theme.of(context)
                                                       .textTheme
-                                                      .bodySmall,
+                                                      .bodyMedium
+                                                      ?.copyWith(
+                                                    color: Theme.of(context).textTheme.bodyMedium!.color!,
+                                                    height: 1.5,
+                                                  ),
                                                 ),
                                               ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: List.generate(
-                                                5,
-                                                (starIndex) => Icon(
-                                                  starIndex < review.rating
-                                                      ? Icons.star_rounded
-                                                      : Icons.star_border_rounded,
-                                                  size: 16,
-                                                  color: const Color(0xFFD4A574),
-                                                ),
-                                              ),
-                                            ),
-                                            if (review.comment != null &&
-                                                review.comment!.isNotEmpty) ...[
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                review.comment!,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium
-                                                    ?.copyWith(
-                                                  color: Theme.of(context).textTheme.bodyMedium!.color!,
-                                                  height: 1.5,
-                                                ),
-                                              ),
                                             ],
-                                          ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                    );
+                 }
+              },
             ),
+            
+            // Similar Products
+            if (_similarProducts.isNotEmpty) ...[
+               const SizedBox(height: 24),
+               Padding(
+                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                 child: Text(
+                   'Similar Products',
+                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                     fontWeight: FontWeight.bold,
+                   ),
+                 ),
+               ),
+               const SizedBox(height: 16),
+               SizedBox(
+                 height: 260, // Height for ProductCard
+                 child: ListView.separated(
+                   padding: const EdgeInsets.symmetric(horizontal: 20),
+                   scrollDirection: Axis.horizontal,
+                   itemCount: _similarProducts.length,
+                   separatorBuilder: (context, index) => const SizedBox(width: 16),
+                   itemBuilder: (context, index) {
+                     final product = _similarProducts[index];
+                     return SizedBox(
+                       width: 160,
+                       child: ProductCard(
+                         product: product,
+                         onTap: () {
+                           // Navigate to detail page of similar product
+                           Navigator.push(
+                             context, 
+                             MaterialPageRoute(
+                               builder: (context) => ProductDetailsPage(product: product)
+                             )
+                           );
+                         },
+                       ),
+                     );
+                   },
+                 ),
+               ),
+               const SizedBox(height: 80), // Bottom padding
+            ],
           ],
         ),
       ),
@@ -929,21 +977,35 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
           ],
         ),
         child: SafeArea(
-          child: _cartItem != null
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('In Cart: ${_cartItem!.quantity}'),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Continue Shopping'),
+          child: (_currentUserId != null && _currentUserId == _product.vendorId)
+              ? SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: null, // Disabled
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[300],
+                      foregroundColor: Colors.grey[600],
+                      disabledBackgroundColor: Colors.grey[300],
+                      disabledForegroundColor: Colors.grey[600],
                     ),
-                  ],
+                    child: const Text('Your Product'),
+                  ),
                 )
-              : ElevatedButton(
-                  onPressed: _product.stockQuantity <= 0 ? null : _addToCart,
-                  child: Text(_product.stockQuantity <= 0 ? 'Out of Stock' : 'Add to Cart'),
-                ),
+              : _cartItem != null
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('In Cart: ${_cartItem!.quantity}'),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Continue Shopping'),
+                        ),
+                      ],
+                    )
+                  : ElevatedButton(
+                      onPressed: _product.stockQuantity <= 0 ? null : _addToCart,
+                      child: Text(_product.stockQuantity <= 0 ? 'Out of Stock' : 'Add to Cart'),
+                    ),
         ),
       ),
     );
