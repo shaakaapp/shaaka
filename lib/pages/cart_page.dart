@@ -280,7 +280,7 @@ class _CartPageState extends State<CartPage> {
                                               ),
                                               const SizedBox(height: 3),
                                               Text(
-                                                'Size: ${item.unitValue < 1 && (item.unit == "kg" || item.unit == "l") ? "${(item.unitValue * 1000).toInt()}${item.unit == "kg" ? "g" : "ml"}" : "${item.unitValue} ${item.unit}"}',
+                                                'Size: ${item.variantLabel ?? (item.unitValue < 1 && (item.unit == "kg" || item.unit == "l") ? "${(item.unitValue * 1000).toInt()}${item.unit == "kg" ? "g" : "ml"}" : "${item.unitValue} ${item.unit}")}',
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .bodySmall

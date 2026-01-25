@@ -7,10 +7,11 @@ class CartItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
     product_id = serializers.IntegerField(write_only=True)
     stock_quantity = serializers.SerializerMethodField()
+    variant_label = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
-        fields = ['id', 'product', 'product_id', 'quantity', 'unit_value', 'total_price', 'stock_quantity']
+        fields = ['id', 'product', 'product_id', 'quantity', 'unit_value', 'total_price', 'stock_quantity', 'variant_label']
 
     def get_stock_quantity(self, obj):
         # Check if there is a variant for this unit_value
@@ -18,6 +19,15 @@ class CartItemSerializer(serializers.ModelSerializer):
         if variant:
             return float(variant.stock_quantity)
         return float(obj.product.stock_quantity)
+
+    def get_variant_label(self, obj):
+        variant = ProductVariant.objects.filter(product=obj.product, quantity=obj.unit_value).first()
+        if variant:
+             qty = variant.quantity
+             # Format to remove trailing zeros if integer
+             qty_str = f"{qty:f}".rstrip('0').rstrip('.')
+             return f"{qty_str} {variant.unit}"
+        return None
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)

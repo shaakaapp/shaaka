@@ -9,6 +9,7 @@ class CartItem {
   final double unitValue; // This is size (e.g. 0.25)
   final double totalPrice;
   final double stockQuantity;
+  final String? variantLabel;
 
   CartItem({
     required this.id,
@@ -21,6 +22,7 @@ class CartItem {
     required this.unitValue,
     required this.totalPrice,
     required this.stockQuantity,
+    this.variantLabel,
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class CartItem {
       unitValue: double.parse(json['unit_value'].toString()),
       totalPrice: double.parse(json['total_price'].toString()), // Trust backend total
       stockQuantity: json['stock_quantity'] != null ? double.parse(json['stock_quantity'].toString()) : 0.0,
+      variantLabel: json['variant_label'],
     );
   }
 }
