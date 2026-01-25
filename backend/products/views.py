@@ -38,7 +38,9 @@ class ProductListCreateView(generics.ListCreateAPIView):
         vendor = get_object_or_404(UserProfile, id=vendor_id)
         
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            print(f"Product Creation Validation Error: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         product = serializer.save(vendor=vendor)
 
         # Handle Images

@@ -24,6 +24,12 @@ class Product(models.Model):
         ('Tiffins', 'Tiffins'),
         ('Drinks', 'Drinks'),
         ('Desserts', 'Desserts'),
+        ('Millets', 'Millets'),
+        ('Pulses', 'Pulses'),
+        ('Flours', 'Flours'),
+        ('Tea Powders', 'Tea Powders'),
+        ('Rice', 'Rice'),
+        ('Oils', 'Oils'),
         ('Others', 'Others'),
     ]
 

@@ -151,31 +151,40 @@ class _DonationsPageState extends State<DonationsPage> {
     setState(() => _isLoading = false);
 
     if (result['success'] == true) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Thank You!'),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.favorite, color: Colors.pink, size: 64),
-              SizedBox(height: 16),
-              Text('Your donation request has been submitted successfully.'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Go back
-              },
-              child: const Text('OK'),
-            ),
-          ],
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Donation successful!'),
+          backgroundColor: Colors.green,
         ),
       );
+      
+      // Reset form instead of popping
+      _formKey.currentState?.reset();
+      _itemNameController.clear();
+      _descriptionController.clear();
+      _quantityController.clear();
+      _pickupAddressController.clear();
+      _contactNumberController.clear();
+      _emailController.clear();
+      _amountController.clear();
+      _messageController.clear();
+      _nameController.clear();
+      _professionController.clear();
+      _subjectController.clear();
+      _durationController.clear();
+      setState(() {
+        _selectedType = 'Food';
+        _selectedImage = null;
+        _selectedDate = null;
+        _selectedTime = null;
+      });
     } else {
-      String err = result['error'] is Map ? (result['error']['error'] ?? 'Failed') : result['error'].toString();
+      dynamic rawError = result['error'];
+      if (rawError is Map && rawError.containsKey('error')) {
+         rawError = rawError['error'];
+      }
+      String err = rawError.toString();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err), backgroundColor: Colors.red));
     }
   }

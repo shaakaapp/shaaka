@@ -32,9 +32,33 @@ class _StorePageState extends State<StorePage> {
   bool _isLoading = true;
   String? _error;
   Map<String, List<Product>> _categorizedProducts = {};
+    String? _selectedCategory;
 
-  // Carousel Logic
+  final Map<String, String> _categoryEmojis = {
+    'Vegetables': '🥦',
+    'Fruits': '🍎',
+    'Dairy': '🥛',
+    'Bakery': '🍞',
+    'Meat': '🥩',
+    'Spices': '🌶️',
+    'Grains': '🌾',
+    'Beverages': '🥤',
+    'Snacks': '🍿',
+    'Others': '🛍️',
+  };
+
+  String _getCategoryEmoji(String category) {
+    return _categoryEmojis[category] ?? '📦';
+  }
+
+  // Carousel Logic (Keep existing)
   final PageController _carouselController = PageController();
+// ... (omitting carousel logic lines here for brevity in prompt, but in real edit I should be careful not to delete them if I'm replacing a chunk. Let's target specific insertion points or replacement carefully)
+// Actually, I can't "omit" if I'm replacing a chunk. I should target the class level variables insertion and then the build method update separately or together if contiguous.
+// Variables are at top of _StorePageState.
+// Build method is lower.
+// I'll do 2 chunks or use multi_replace.
+
   int _currentCarouselIndex = 0;
   Timer? _carouselTimer;
   final List<String> _carouselImages = [
@@ -343,99 +367,181 @@ class _StorePageState extends State<StorePage> {
                 // Carousel (Show only if not vendor mode AND not searching)
                 if (!widget.isVendorView && _searchController.text.isEmpty)
                   SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 220,
-                      child: Stack(
-                        children: [
-                          PageView.builder(
-                            controller: _carouselController,
-                            itemCount: _carouselImages.length,
-                            onPageChanged: (index) {
-                              setState(() {
-                                _currentCarouselIndex = index;
-                              });
-                            },
-                            itemBuilder: (context, index) {
-                              return Image.network(
-                                _carouselImages[index],
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Center(
-                                    child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded /
-                                              loadingProgress.expectedTotalBytes!
-                                          : null,
+                    child: Column(
+                      children: [
+                        // Carousel
+                        SizedBox(
+                          height: 220,
+                          child: Stack(
+                            children: [
+                              PageView.builder(
+                                controller: _carouselController,
+                                itemCount: _carouselImages.length,
+                                onPageChanged: (index) {
+                                  setState(() {
+                                    _currentCarouselIndex = index;
+                                  });
+                                },
+                                itemBuilder: (context, index) {
+                                  return Image.network(
+                                    _carouselImages[index],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                  loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.image_not_supported,
+                                          size: 50, color: Colors.grey),
                                     ),
                                   );
                                 },
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.image_not_supported,
-                                      size: 50, color: Colors.grey),
+                              ),
+                              Positioned(
+                                bottom: 16,
+                                left: 0,
+                                right: 0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: _carouselImages.asMap().entries.map((entry) {
+                                    return AnimatedContainer(
+                                      duration: const Duration(milliseconds: 300),
+                                      width: _currentCarouselIndex == entry.key ? 20.0 : 8.0,
+                                      height: 8.0,
+                                      margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(4),
+                                        color: Colors.white.withOpacity(
+                                            _currentCarouselIndex == entry.key ? 0.9 : 0.4),
+                                      ),
+                                    );
+                                  }).toList(),
                                 ),
-                              );
-                            },
+                              ),
+                            ],
                           ),
-                          Positioned(
-                            bottom: 16,
-                            left: 0,
-                            right: 0,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: _carouselImages.asMap().entries.map((entry) {
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  width: _currentCarouselIndex == entry.key ? 20.0 : 8.0,
-                                  height: 8.0,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(4),
-                                    color: Colors.white.withOpacity(
-                                        _currentCarouselIndex == entry.key ? 0.9 : 0.4),
+                        ),
+                        
+                        // Category Filters
+                        Container(
+                          height: 50,
+                          margin: const EdgeInsets.symmetric(vertical: 12),
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            children: [
+                              // All Button
+                              Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: FilterChip(
+                                  selected: _selectedCategory == null,
+                                  label: const Text('All 🏠'),
+                                  onSelected: (bool selected) {
+                                    setState(() {
+                                      _selectedCategory = null;
+                                    });
+                                  },
+                                  backgroundColor: Colors.white,
+                                  selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                  checkmarkColor: Theme.of(context).colorScheme.primary,
+                                  labelStyle: TextStyle(
+                                    color: Colors.black87, // Always visible
+                                    fontWeight: _selectedCategory == null ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                  side: BorderSide(
+                                    color: _selectedCategory == null 
+                                      ? Theme.of(context).colorScheme.primary 
+                                      : Colors.grey.shade300,
+                                  ),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  elevation: 2,
+                                  shadowColor: Colors.black12,
+                                ),
+                              ),
+                              // Categories
+                              ..._categorizedProducts.keys.map((category) {
+                                final isSelected = _selectedCategory == category;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  child: FilterChip(
+                                    selected: isSelected,
+                                    label: Text('$category ${_getCategoryEmoji(category)}'),
+                                    onSelected: (bool selected) {
+                                      setState(() {
+                                        _selectedCategory = selected ? category : null;
+                                      });
+                                    },
+                                    backgroundColor: Colors.white,
+                                    selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                    checkmarkColor: Theme.of(context).colorScheme.primary,
+                                    labelStyle: TextStyle(
+                                      color: Colors.black87, // Always visible
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                    side: BorderSide(
+                                      color: isSelected 
+                                        ? Theme.of(context).colorScheme.primary 
+                                        : Colors.grey.shade300,
+                                    ),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    elevation: 2,
+                                    shadowColor: Colors.black12,
                                   ),
                                 );
                               }).toList(),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
 
-                // If Searching -> Show Grid
-                if (_searchController.text.isNotEmpty)
+                // If Searching OR Specific Category Selected -> Show Grid
+                if (_searchController.text.isNotEmpty || _selectedCategory != null)
                   SliverPadding(
                       padding: const EdgeInsets.all(16),
                       sliver: SliverGrid(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.68,
+                          childAspectRatio: 0.75, // Increased from 0.68
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
+                            final displayList = _searchController.text.isNotEmpty 
+                                ? _filteredProducts 
+                                : _categorizedProducts[_selectedCategory!]!;
+                                
                             return ProductCard(
-                              product: _filteredProducts[index],
+                              product: displayList[index],
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) => ProductDetailsPage(
-                                        product: _filteredProducts[index]),
+                                        product: displayList[index]),
                                   ),
                                 ).then((_) => _loadProducts());
                               },
                               onEdit: widget.isVendorView ? () { /*...*/ } : null,
                             );
                           },
-                          childCount: _filteredProducts.length,
+                          childCount: _searchController.text.isNotEmpty 
+                              ? _filteredProducts.length
+                              : _categorizedProducts[_selectedCategory!]!.length,
                         ),
                       ),
                     )
-                // Else -> Show Categories
+                // Else -> Show Categories Sections
                 else ...[
                   // Padding
                   const SliverToBoxAdapter(child: SizedBox(height: 16)),

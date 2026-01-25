@@ -17,7 +17,25 @@ class CategoryProductsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(category),
+        title: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.eco,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(category),
+          ],
+        ),
         elevation: 0,
       ),
       body: products.isEmpty
@@ -26,9 +44,9 @@ class CategoryProductsPage extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.7,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                childAspectRatio: 0.75, // Increased from 0.7 for tighter spacing
+                crossAxisSpacing: 12, // Reduced spacing
+                mainAxisSpacing: 12,
               ),
               itemCount: products.length,
               itemBuilder: (context, index) {

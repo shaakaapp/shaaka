@@ -40,9 +40,9 @@ class AppTheme {
         onBackground: textDark,
         onError: Colors.white,
       ),
-      scaffoldBackgroundColor: softBeige,
+      scaffoldBackgroundColor: Colors.transparent, // Transparent to show animated background
       appBarTheme: AppBarTheme(
-        backgroundColor: warmWhite,
+        backgroundColor: warmWhite.withOpacity(0.8), // Glassmorphism for AppBar
         elevation: 0,
         scrolledUnderElevation: 2,
         iconTheme: const IconThemeData(color: textDark),
@@ -254,9 +254,9 @@ class AppTheme {
         onBackground: darkTextLight,
         onError: darkBackground,
       ),
-      scaffoldBackgroundColor: darkBackground,
+      scaffoldBackgroundColor: Colors.transparent, // Transparent to show animated background
       appBarTheme: AppBarTheme(
-        backgroundColor: darkSurface,
+        backgroundColor: darkSurface.withOpacity(0.8), // Glassmorphism for AppBar
         elevation: 0,
         scrolledUnderElevation: 2,
         shadowColor: Colors.black.withOpacity(0.5),
