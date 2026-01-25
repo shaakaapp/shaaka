@@ -158,20 +158,36 @@ class _AddProductPageState extends State<AddProductPage> {
       return;
     }
 
-    // 1. Upload Images First
+    // 1. Upload Images First (Parallel)
     List<String> newImageUrls = [];
-    for (var image in _selectedImages) {
-      final uploadResult = await ApiService.uploadImage(image, type: 'product');
-      if (uploadResult['success'] == true) {
-        newImageUrls.add(uploadResult['url']);
-      } else {
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Failed to upload image: ${uploadResult['error'] is Map ? (uploadResult['error']['error'] ?? 'Unknown error') : uploadResult['error']}')));
+    
+    // Create futures for all uploads
+    List<Future<Map<String, dynamic>>> uploadFutures = _selectedImages
+        .map((image) => ApiService.uploadImage(image, type: 'product'))
+        .toList();
+
+    try {
+      final results = await Future.wait(uploadFutures);
+      
+      for (int i = 0; i < results.length; i++) {
+        final uploadResult = results[i];
+        if (uploadResult['success'] == true) {
+          newImageUrls.add(uploadResult['url']);
+        } else {
+           // If any fail, we could revert or just show error. 
+           // For now, let's stop and show error.
+           throw Exception(uploadResult['error'] is Map ? (uploadResult['error']['error'] ?? 'Unknown error') : uploadResult['error']);
         }
-        setState(() => _isLoading = false);
-        return;
       }
+    } catch (e) {
+      if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Failed to upload image: $e'), 
+            backgroundColor: Colors.red
+         ));
+      }
+      setState(() => _isLoading = false);
+      return;
     }
 
     // Combine existing and new images

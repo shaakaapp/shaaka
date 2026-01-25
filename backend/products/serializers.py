@@ -38,8 +38,9 @@ class ProductSerializer(serializers.ModelSerializer):
         variants_data = validated_data.pop('variants', [])
         product = Product.objects.create(**validated_data)
         
-        for variant_data in variants_data:
-            ProductVariant.objects.create(product=product, **variant_data)
+        variants = [ProductVariant(product=product, **v_data) for v_data in variants_data]
+        if variants:
+            ProductVariant.objects.bulk_create(variants)
             
         return product
 
