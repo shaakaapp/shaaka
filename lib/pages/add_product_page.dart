@@ -283,7 +283,7 @@ class _AddProductPageState extends State<AddProductPage> {
         ],
       )),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 32),
         child: Form(
           key: _formKey,
           child: Column(

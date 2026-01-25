@@ -168,7 +168,7 @@ class _ProductCardState extends State<ProductCard> {
                      borderRadius: BorderRadius.circular(16),
                      child: const Padding(
                        padding: EdgeInsets.all(4.0),
-                       child: Icon(Icons.edit, size: 16, color: AppTheme.primaryGreen),
+                       child: Icon(Icons.edit, size: 24, color: AppTheme.primaryGreen),
                      ),
                    )
                  else if (widget.product.stockQuantity > 0)
