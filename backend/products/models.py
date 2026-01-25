@@ -64,6 +64,7 @@ class ProductVariant(models.Model):
     quantity = models.DecimalField(max_digits=10, decimal_places=3)
     unit = models.CharField(max_length=50)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    stock_quantity = models.DecimalField(max_digits=10, decimal_places=3, default=0)
 
     class Meta:
         db_table = 'product_variants'

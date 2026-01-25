@@ -37,6 +37,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
   double _quantityStep = 1.0;
   String _selectedUnitName = '';
   List<Map<String, dynamic>> _variants = [];
+  double _currentPrice = 0.0;
+  double _currentStock = 0.0;
 
   @override
   void initState() {
@@ -48,8 +50,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
     });
     
     print('ProductDetailsPage initState - Product: ${_product.name}');
+    _calculateVariants(); // Calculate variants first
     _initialize();
-    _calculateVariants();
   }
   
   @override
@@ -60,38 +62,58 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
 
   void _calculateVariants() {
     _variants = [];
-    final unit = _product.unit.toLowerCase();
+    
+    if (_product.variants.isNotEmpty) {
+       // Use User Defined Variants
+       _variants = _product.variants.map((v) => {
+         'step': v.quantity,
+         'name': '${v.quantity} ${v.unit}',
+         'price': v.price,
+         'stock': v.stockQuantity,
+       }).toList();
+       
+       // Sort by quantity for better UX
+       _variants.sort((a, b) => (a['step'] as double).compareTo(b['step'] as double));
 
-    if (unit == 'kg') {
-      _variants = [
-        {'step': 0.25, 'name': '250g'},
-        {'step': 0.5, 'name': '500g'},
-        {'step': 1.0, 'name': '1kg'},
-        {'step': 2.0, 'name': '2kg'},
-      ];
-    } else if (unit == 'l' || unit == 'liter' || unit == 'litre') {
-      _variants = [
-        {'step': 0.25, 'name': '250ml'},
-        {'step': 0.5, 'name': '500ml'},
-        {'step': 1.0, 'name': '1L'},
-        {'step': 2.0, 'name': '2L'},
-      ];
-    } else if (unit == 'dozen') {
-      _variants = [
-        {'step': 0.5, 'name': '6 pcs'},
-        {'step': 1.0, 'name': '1 dozen'},
-        {'step': 2.0, 'name': '2 dozen'},
-      ];
     } else {
-      _variants = [
-        {'step': 1.0, 'name': '1 $unit'},
-        {'step': 2.0, 'name': '2 $unit'},
-        {'step': 5.0, 'name': '5 $unit'},
-      ];
+      // Use Standard Calculation Logic
+      final unit = _product.unit.toLowerCase();
+
+      if (unit == 'kg') {
+        _variants = [
+          {'step': 0.25, 'name': '250g', 'price': _product.price * 0.25, 'stock': _product.stockQuantity},
+          {'step': 0.5, 'name': '500g', 'price': _product.price * 0.5, 'stock': _product.stockQuantity},
+          {'step': 1.0, 'name': '1kg', 'price': _product.price * 1.0, 'stock': _product.stockQuantity},
+          {'step': 2.0, 'name': '2kg', 'price': _product.price * 2.0, 'stock': _product.stockQuantity},
+        ];
+      } else if (unit == 'l' || unit == 'liter' || unit == 'litre') {
+        _variants = [
+          {'step': 0.25, 'name': '250ml', 'price': _product.price * 0.25, 'stock': _product.stockQuantity},
+          {'step': 0.5, 'name': '500ml', 'price': _product.price * 0.5, 'stock': _product.stockQuantity},
+          {'step': 1.0, 'name': '1L', 'price': _product.price * 1.0, 'stock': _product.stockQuantity},
+          {'step': 2.0, 'name': '2L', 'price': _product.price * 2.0, 'stock': _product.stockQuantity},
+        ];
+      } else if (unit == 'dozen') {
+        _variants = [
+          {'step': 0.5, 'name': '6 pcs', 'price': _product.price * 0.5, 'stock': _product.stockQuantity},
+          {'step': 1.0, 'name': '1 dozen', 'price': _product.price * 1.0, 'stock': _product.stockQuantity},
+          {'step': 2.0, 'name': '2 dozen', 'price': _product.price * 2.0, 'stock': _product.stockQuantity},
+        ];
+      } else {
+        _variants = [
+          {'step': 1.0, 'name': '1 $unit', 'price': _product.price, 'stock': _product.stockQuantity},
+          {'step': 2.0, 'name': '2 $unit', 'price': _product.price * 2.0, 'stock': _product.stockQuantity},
+          {'step': 5.0, 'name': '5 $unit', 'price': _product.price * 5.0, 'stock': _product.stockQuantity},
+        ];
+      }
     }
 
-    _quantityStep = _variants.first['step'];
-    _selectedUnitName = _variants.first['name'];
+    if (_variants.isNotEmpty) {
+      _quantityStep = _variants.first['step'];
+      _selectedUnitName = _variants.first['name'];
+      _currentPrice = _variants.first['price'];
+      _currentStock = _variants.first['stock'];
+    }
   }
 
   Future<void> _initialize() async {
@@ -562,7 +584,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '₹${(_product.price * _quantityStep).toStringAsFixed(2)}',
+                    '₹${_currentPrice.toStringAsFixed(2)}',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
@@ -598,7 +620,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
                           if (value != null) {
                             setState(() {
                               _quantityStep = value;
-                              _selectedUnitName = _variants.firstWhere((v) => v['step'] == value)['name'];
+                              final selectedVariant = _variants.firstWhere((v) => v['step'] == value);
+                              _selectedUnitName = selectedVariant['name'];
+                              _currentPrice = selectedVariant['price'];
+                              _currentStock = selectedVariant['stock'];
                               _cartItem = null; // Reset current cart viewing state to check for new unit
                             });
                             _checkCart(); // Check if this new unit variant is in cart
@@ -620,16 +645,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _product.stockQuantity > 0 
+                          color: _currentStock > 0 
                             ? AppTheme.successGreen.withOpacity(0.1) 
                             : AppTheme.errorRed.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          _product.stockQuantity > 0 ? 'In Stock' : 'Out of Stock',
+                          _currentStock > 0 ? 'In Stock' : 'Out of Stock',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: _product.stockQuantity > 0 
+                            color: _currentStock > 0 
                               ? AppTheme.successGreen 
                               : AppTheme.errorRed,
                           ),

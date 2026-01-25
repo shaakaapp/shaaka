@@ -101,6 +101,7 @@ class _AddProductPageState extends State<AddProductPage> {
             'quantity': v.quantity,
             'unit': v.unit,
             'price': v.price,
+            'stock_quantity': v.stockQuantity,
           });
         }
       }
@@ -140,6 +141,13 @@ class _AddProductPageState extends State<AddProductPage> {
   Future<void> _addProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Validate variants existence if tiered pricing is selected
+    if (_hasVariants && _variantsList.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please add at least one variant'), backgroundColor: Colors.red));
+      return;
+    }
+
     if (_selectedImages.isEmpty && _existingImageUrls.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please add at least one image')));
@@ -159,6 +167,7 @@ class _AddProductPageState extends State<AddProductPage> {
     }
 
     // 1. Upload Images First (Parallel)
+    print("Starting image uploads...");
     List<String> newImageUrls = [];
     
     // Create futures for all uploads
@@ -174,70 +183,78 @@ class _AddProductPageState extends State<AddProductPage> {
         if (uploadResult['success'] == true) {
           newImageUrls.add(uploadResult['url']);
         } else {
-           // If any fail, we could revert or just show error. 
-           // For now, let's stop and show error.
+           print("Upload failed: ${uploadResult['error']}");
            throw Exception(uploadResult['error'] is Map ? (uploadResult['error']['error'] ?? 'Unknown error') : uploadResult['error']);
         }
       }
-    } catch (e) {
+      print("All images uploaded successfully. URLs: $newImageUrls");
+
+      // Combine existing and new images
+      final allImageUrls = [..._existingImageUrls, ...newImageUrls];
+
+      // 2. Add Product with Image URLs
+      // Determine price safely
+      double price;
+      if (_hasVariants) {
+        // Use the price of the first variant as the display price
+        price = _variantsList.isNotEmpty 
+            ? (_variantsList.first['price'] is num ? (_variantsList.first['price'] as num).toDouble() : 0.0) 
+            : 0.0;
+      } else {
+        price = double.tryParse(_priceController.text.trim()) ?? 0.0;
+      }
+
+      final productData = {
+        'vendor': userId,
+        'name': _nameController.text.trim(),
+        'category': _selectedCategory,
+        'price': price,
+        'unit': _selectedUnit,
+        'stock_quantity': _hasVariants 
+            ? _variantsList.fold<double>(0, (sum, item) => sum + (item['stock_quantity'] ?? 0))
+            : (double.tryParse(_stockController.text.trim()) ?? 0.0),
+        'description': _descriptionController.text.trim(),
+        'images': allImageUrls,
+      };
+
+      if (_hasVariants) {
+        productData['variants'] = _variantsList;
+      }
+
+      Map<String, dynamic> result;
+      print("Calling API with data: ${productData['name']}, Variants: ${_hasVariants ? _variantsList.length : 0}");
+      
+      if (widget.product != null) {
+          result = await ApiService.updateProduct(widget.product!.id, productData);
+      } else {
+          result = await ApiService.addProduct(productData);
+      }
+      print("API Response: $result");
+
       if (mounted) {
+        setState(() => _isLoading = false);
+        if (result['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(widget.product != null ? 'Product Updated Successfully!' : 'Product Added Successfully!'),
+              backgroundColor: Colors.green));
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(result['error'] is Map 
+                  ? (result['error']['error'] ?? 'Failed to add product') 
+                  : result['error'].toString()),
+              backgroundColor: Colors.red));
+        }
+      }
+
+    } catch (e, stack) {
+      print("Exception during addProduct: $e\n$stack");
+      if (mounted) {
+         setState(() => _isLoading = false);
          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Failed to upload image: $e'), 
+            content: Text('An error occurred: $e'), 
             backgroundColor: Colors.red
          ));
-      }
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    // Combine existing and new images
-    final allImageUrls = [..._existingImageUrls, ...newImageUrls];
-
-    // 2. Add Product with Image URLs
-    final productData = {
-      'vendor': userId,
-      'name': _nameController.text.trim(),
-      'category': _selectedCategory,
-      'price': double.parse(_priceController.text.trim()),
-      'unit': _selectedUnit,
-      'stock_quantity': double.parse(_stockController.text.trim()),
-      'description': _descriptionController.text.trim(),
-      'images': allImageUrls,
-    };
-
-    if (_hasVariants) {
-      productData['variants'] = _variantsList;
-      // Use first variant as default price display or keep main price as base price?
-      // Backend model requires 'price', so we should ensure main price is set or derived.
-      // If user didn't enter main price in variant mode, maybe pick the first variant's price?
-      if (_priceController.text.isEmpty && _variantsList.isNotEmpty) {
-         productData['price'] = _variantsList.first['price'];
-         // Also set dummy values for required fields if hidden
-         productData['stock_quantity'] = productData['stock_quantity'] ?? 0;
-      }
-    }
-
-    Map<String, dynamic> result;
-    if (widget.product != null) {
-        result = await ApiService.updateProduct(widget.product!.id, productData);
-    } else {
-        result = await ApiService.addProduct(productData);
-    }
-
-    setState(() => _isLoading = false);
-
-    if (result['success'] == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(widget.product != null ? 'Product Updated Successfully!' : 'Product Added Successfully!'),
-          backgroundColor: Colors.green));
-      Navigator.pop(context, true);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(result['error'] is Map 
-                ? (result['error']['error'] ?? 'Failed to add product') 
-                : result['error'].toString()),
-            backgroundColor: Colors.red));
       }
     }
   }
@@ -368,16 +385,26 @@ class _AddProductPageState extends State<AddProductPage> {
                                    ),
                                  ),
                                  const SizedBox(width: 8),
-                                 Expanded(
-                                   flex: 2,
-                                   child: TextFormField(
-                                     initialValue: variant['price'].toString(),
-                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                     decoration: const InputDecoration(labelText: 'Price', isDense: true, border: OutlineInputBorder()),
-                                     onChanged: (val) => variant['price'] = double.tryParse(val) ?? 0,
-                                   ),
-                                 ),
-                                 IconButton(
+                                  Expanded(
+                                    flex: 2,
+                                    child: TextFormField(
+                                      initialValue: variant['price'].toString(),
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      decoration: const InputDecoration(labelText: 'Price', isDense: true, border: OutlineInputBorder()),
+                                      onChanged: (val) => variant['price'] = double.tryParse(val) ?? 0,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    flex: 2,
+                                    child: TextFormField(
+                                      initialValue: (variant['stock_quantity'] ?? 0).toString(),
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      decoration: const InputDecoration(labelText: 'Stock', isDense: true, border: OutlineInputBorder()),
+                                      onChanged: (val) => variant['stock_quantity'] = double.tryParse(val) ?? 0,
+                                    ),
+                                  ),
+                                  IconButton(
                                    icon: const Icon(Icons.delete, color: Colors.red),
                                    onPressed: () => setState(() => _variantsList.removeAt(idx)),
                                  ),
@@ -389,7 +416,7 @@ class _AddProductPageState extends State<AddProductPage> {
                          OutlinedButton.icon(
                            onPressed: () {
                              setState(() {
-                               _variantsList.add({'quantity': 1, 'unit': 'kg', 'price': 0});
+                               _variantsList.add({'quantity': 1, 'unit': 'kg', 'price': 0, 'stock_quantity': 0});
                              });
                            },
                            icon: const Icon(Icons.add),

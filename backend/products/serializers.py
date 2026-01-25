@@ -18,7 +18,7 @@ class ProductReviewSerializer(serializers.ModelSerializer):
 class ProductVariantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
-        fields = ['id', 'quantity', 'unit', 'price']
+        fields = ['id', 'quantity', 'unit', 'price', 'stock_quantity']
 
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)

@@ -46,12 +46,14 @@ class ProductVariant {
   final double quantity;
   final String unit;
   final double price;
+  final double stockQuantity;
 
   ProductVariant({
     required this.id,
     required this.quantity,
     required this.unit,
     required this.price,
+    required this.stockQuantity,
   });
 
   factory ProductVariant.fromJson(Map<String, dynamic> json) {
@@ -60,6 +62,7 @@ class ProductVariant {
       quantity: double.tryParse(json['quantity'].toString()) ?? 0.0,
       unit: json['unit'] ?? '',
       price: double.tryParse(json['price'].toString()) ?? 0.0,
+      stockQuantity: double.tryParse(json['stock_quantity'].toString()) ?? 0.0,
     );
   }
 }

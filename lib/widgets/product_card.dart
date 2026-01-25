@@ -148,7 +148,9 @@ class _ProductCardState extends State<ProductCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                  Text(
-                    '₹${widget.product.price}',
+                    widget.product.variants.isNotEmpty
+                      ? 'From ₹${widget.product.variants.map((v) => v.price).reduce((a, b) => a < b ? a : b)}'
+                      : '₹${widget.product.price}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).textTheme.bodyLarge?.color, // Adapt to theme
