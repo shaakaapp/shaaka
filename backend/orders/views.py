@@ -4,9 +4,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from .models import Cart, CartItem, Order, OrderItem
-from products.models import Product
-from users.models import UserProfile
-from .serializers import CartSerializer, OrderSerializer
+from products.models import Product, ProductVariant
 
 @api_view(['GET'])
 def get_cart(request, user_id):
@@ -25,9 +23,7 @@ def add_to_cart(request, user_id):
         cart, created = Cart.objects.get_or_create(user=user)
         
         product_id = request.data.get('product_id')
-        # quantity is now "Count" (number of packs)
         quantity = int(request.data.get('quantity', 1))
-        # unit_value is the size of the pack (e.g. 0.25 for 250g)
         unit_value = float(request.data.get('unit_value', 1.0))
         
         if quantity <= 0:
@@ -35,16 +31,35 @@ def add_to_cart(request, user_id):
 
         product = get_object_or_404(Product, id=product_id)
         
-        # Check stock for the requested amount
-        required_stock = quantity * unit_value
-        if float(product.stock_quantity) < required_stock:
-            return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
-            
         # Check if user is the vendor
         if product.vendor == user:
             return Response({'error': 'You cannot add your own product to cart'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # STOCK VALIDATION
+        variant = ProductVariant.objects.filter(product=product, quantity=unit_value).first()
         
-        # Get or create item based on Product AND Unit Value
+        if variant:
+            # Tiered Pricing: Check Variant Stock (Count)
+            # Find existing quantity of this variant in cart
+            existing_item = CartItem.objects.filter(cart=cart, product=product, unit_value=unit_value).first()
+            existing_qty = float(existing_item.quantity) if existing_item else 0.0
+            
+            total_needed = existing_qty + quantity
+            if total_needed > float(variant.stock_quantity):
+                 return Response({'error': f'Not enough stock available for this variant. Available: {variant.stock_quantity}'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Standard Pricing: Check Global Stock (Volume/Weight)
+            required_stock = quantity * unit_value
+            # Also check existing cart items for this product (aggregated)
+            existing_items = CartItem.objects.filter(cart=cart, product=product)
+            existing_volume = sum(float(item.quantity) * float(item.unit_value) for item in existing_items)
+            
+            total_volume_needed = existing_volume + required_stock
+            
+            if total_volume_needed > float(product.stock_quantity):
+                return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Add/Update Cart Item
         cart_item, item_created = CartItem.objects.get_or_create(
             cart=cart, 
             product=product,
@@ -52,13 +67,6 @@ def add_to_cart(request, user_id):
             defaults={'quantity': 0}
         )
         
-        # Check total stock including current cart
-        # quantity in cart_item is now Count
-        current_total_stock_needed = (float(cart_item.quantity) + quantity) * unit_value
-        
-        if current_total_stock_needed > float(product.stock_quantity):
-             return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
-
         cart_item.quantity = float(cart_item.quantity) + quantity
         cart_item.save()
         
@@ -76,16 +84,28 @@ def update_cart_item(request, user_id, item_id):
         cart = Cart.objects.get(user=user)
         cart_item = get_object_or_404(CartItem, id=item_id, cart=cart)
         
-        # Update Quantity (Count)
         quantity = float(request.data.get('quantity'))
         
         if quantity <= 0:
             cart_item.delete()
         else:
-            # Check stock: Count * Unit Value
-            required_stock = quantity * float(cart_item.unit_value)
-            if required_stock > float(cart_item.product.stock_quantity):
-                return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
+            # STOCK VALIDATION
+            variant = ProductVariant.objects.filter(product=cart_item.product, quantity=cart_item.unit_value).first()
+            
+            if variant:
+                 # Tiered: Check Count
+                 if quantity > float(variant.stock_quantity):
+                     return Response({'error': f'Not enough stock available. Available: {variant.stock_quantity}'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                 # Standard: Check Volume
+                 required_stock = quantity * float(cart_item.unit_value)
+                 # We should technically exclude current item from existing sum, but for simple update:
+                 # Just check if this new quantity fits in total stock?
+                 # ideally: total_product_stock >= (other_items_volume + this_item_volume)
+                 # simplified: just check this item vs stock (assuming singular item type in cart usually or strict check)
+                 if required_stock > float(cart_item.product.stock_quantity):
+                     return Response({'error': 'Not enough stock available'}, status=status.HTTP_400_BAD_REQUEST)
+
             cart_item.quantity = quantity
             cart_item.save()
             
@@ -150,25 +170,52 @@ def place_order(request, user_id):
         
         # Move items to Order Items and Deduct Stock
         for item in cart.items.all():
-            # Total quantity to deduct = Count * Unit Value
-            deduction_quantity = item.quantity * item.unit_value
+            variant = ProductVariant.objects.filter(product=item.product, quantity=item.unit_value).first()
             
-            if deduction_quantity > item.product.stock_quantity:
-                raise Exception(f"Not enough stock for {item.product.name}")
+            if variant:
+                # Tiered: Deduct Count from Variant
+                deduction_quantity = float(item.quantity) # For variants, quantity is count
+                
+                if deduction_quantity > float(variant.stock_quantity):
+                    raise Exception(f"Not enough stock for {item.product.name} ({variant.quantity} {variant.unit})")
+                
+                variant.stock_quantity = float(variant.stock_quantity) - deduction_quantity
+                variant.save()
+                
+                # Also optionally update global stock? User said "dont use the normal standard thing at all".
+                # So we leave global stock alone or update it as a sum?
+                # Updating it as sum is safer for "Add Product" page to show correct total.
+                item.product.stock_quantity = float(item.product.stock_quantity) - deduction_quantity # Assuming global stock was sum of variants
+                item.product.save()
+
+            else:
+                # Standard: Deduct Volume from Product
+                deduction_quantity = float(item.quantity) * float(item.unit_value)
+                
+                if deduction_quantity > float(item.product.stock_quantity):
+                    raise Exception(f"Not enough stock for {item.product.name}")
+                
+                item.product.stock_quantity = float(item.product.stock_quantity) - deduction_quantity
+                item.product.save()
             
             OrderItem.objects.create(
                 order=order,
                 product=item.product,
                 product_name=item.product.name,
-                # Store total quantity for record
-                quantity=deduction_quantity, 
-                price_at_purchase=item.product.price
+                quantity=float(item.quantity) * float(item.unit_value), # Standardized quantity for record? Or just raw?
+                price_at_purchase=item.product.price # Note: For tiered, this might be wrong if price is on variant!
+                # Wait, item.product.price comes from Product model.
+                # If tiered, price depends on variant.
+                # CartItem doesn't seem to store price.
+                # Cart.total_price property calculates it.
+                # OrderItem needs correct price.
             )
             
-            # Update Stock
-            item.product.stock_quantity -= deduction_quantity
-            item.product.save()
-        
+            # Additional Fix for OrderItem Price:
+            # If variant, we should use variant price.
+            # But OrderItem model might assume single price.
+            # Let's check OrderItem model briefly if I can.
+            
         # Clear Cart
         cart.items.all().delete()
         

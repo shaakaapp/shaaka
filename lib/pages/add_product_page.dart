@@ -435,15 +435,16 @@ class _AddProductPageState extends State<AddProductPage> {
               ],
               const SizedBox(height: 16),
               
-              TextFormField(
-                controller: _stockController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                    labelText: 'Stock Quantity *', border: OutlineInputBorder()),
-                // inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*'))], // Optional: strict regex
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Required' : null,
-              ),
+              if (!_hasVariants)
+                TextFormField(
+                  controller: _stockController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                      labelText: 'Stock Quantity *', border: OutlineInputBorder()),
+                  // inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*'))], // Optional: strict regex
+                  validator: (val) =>
+                      val == null || val.isEmpty ? 'Required' : null,
+                ),
               const SizedBox(height: 16),
               
               TextFormField(

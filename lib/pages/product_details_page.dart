@@ -178,6 +178,17 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
       return;
     }
 
+    // Check local stock limit including existing cart items
+    final currentCartQty = _cartItem?.quantity ?? 0;
+    if (currentCartQty + 1 > _currentStock) {
+       if (!mounted) return;
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+           content: Text('Cannot add more. Stock limit: $_currentStock'), 
+           backgroundColor: Colors.red
+       ));
+       return;
+    }
+
     setState(() => _isLoadingCart = true);
     final result = await ApiService.addToCart(userId, _product.id, _quantityStep, quantity: 1);
     setState(() => _isLoadingCart = false);

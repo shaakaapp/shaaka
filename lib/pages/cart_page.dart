@@ -349,30 +349,41 @@ class _CartPageState extends State<CartPage> {
                                                       ),
                                                     ),
                                                   ),
-                                                  Material(
-                                                    color: Theme.of(context).colorScheme.primary
-                                                        .withOpacity(0.1),
-                                                    borderRadius:
-                                                        BorderRadius.circular(8),
-                                                    child: InkWell(
-                                                      onTap: () {
-                                                        _updateQuantity(
-                                                            item,
-                                                            item.quantity + 1.0);
-                                                      },
+                                                    Material(
+                                                      color: item.quantity >= item.stockQuantity 
+                                                          ? Colors.grey.withOpacity(0.1)
+                                                          : Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                                       borderRadius:
                                                           BorderRadius.circular(8),
-                                                      child: Container(
-                                                        width: 32,
-                                                        height: 32,
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: Icon(
-                                                          Icons.add_rounded,
-                                                          size: 18,
-                                                          color:
-                                                              Theme.of(context).colorScheme.primary,
-                                                        ),
+                                                      child: InkWell(
+                                                        onTap: item.quantity >= item.stockQuantity 
+                                                            ? () {
+                                                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                                                  content: Text('Cannot add more. Stock limit: ${item.stockQuantity}'),
+                                                                  duration: const Duration(seconds: 2),
+                                                                  backgroundColor: Colors.red,
+                                                                ));
+                                                            }
+                                                            : () {
+                                                                _updateQuantity(
+                                                                    item,
+                                                                    item.quantity + 1.0);
+                                                              },
+                                                        borderRadius:
+                                                            BorderRadius.circular(8),
+                                                        child: Container(
+                                                          width: 32,
+                                                          height: 32,
+                                                          alignment:
+                                                              Alignment.center,
+                                                          child: Icon(
+                                                            Icons.add_rounded,
+                                                            size: 18,
+                                                            color: item.quantity >= item.stockQuantity
+                                                                ? Colors.grey
+                                                                : Theme.of(context).colorScheme.primary,
+                                                          ),
                                                       ),
                                                     ),
                                                   ),
