@@ -102,13 +102,14 @@ def update_product_rating(sender, instance, **kwargs):
 
 class AutoScrollImage(models.Model):
     id = models.BigAutoField(primary_key=True)
-    image = models.CharField(max_length=255)
+    image = models.CharField(max_length=255, blank=True, null=True)
     title = models.CharField(max_length=255, blank=True, null=True)
     is_active = models.BooleanField()
     order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     placement = models.CharField(max_length=50)
+    image_url = models.CharField(max_length=500, blank=True, null=True)
 
     class Meta:
         managed = False

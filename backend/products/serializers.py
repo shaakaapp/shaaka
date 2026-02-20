@@ -5,7 +5,7 @@ from users.serializers import UserProfileSerializer
 class AutoScrollImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = AutoScrollImage
-        fields = ['id', 'image', 'title', 'is_active', 'order', 'placement']
+        fields = ['id', 'image', 'image_url', 'title', 'is_active', 'order', 'placement']
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:

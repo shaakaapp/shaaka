@@ -16,7 +16,11 @@ class AutoScrollImage {
   });
 
   factory AutoScrollImage.fromJson(Map<String, dynamic> json) {
-    final String rawImage = json['image'] ?? '';
+    String rawImage = json['image_url']?.toString() ?? '';
+    if (rawImage.isEmpty) {
+      rawImage = json['image']?.toString() ?? '';
+    }
+    
     // If the image is a relative path like 'auto_scroll_images/...', prefix it with the base domain
     // Assuming the base domain is the same as the ApiService baseUrl but pointing to /media/
     final String fullImageUrl = rawImage.startsWith('http') 
