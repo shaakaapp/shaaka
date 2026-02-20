@@ -1,9 +1,14 @@
 from rest_framework import generics, status, permissions, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
-from .models import Product, ProductImage, ProductReview
-from .serializers import ProductSerializer, ProductReviewSerializer
+from .models import Product, ProductImage, ProductReview, ProductVariant, AutoScrollImages
+from .serializers import (
+    ProductSerializer, ProductImageSerializer, ProductReviewSerializer,
+    ProductVariantSerializer, AutoScrollImageSerializer
+)
 from users.models import UserProfile
 
 class ProductListCreateView(generics.ListCreateAPIView):
@@ -11,13 +16,13 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         queryset = Product.objects.all()
-        
+
         # Handle Search
         search_query = self.request.query_params.get('search', None)
         if search_query:
             from django.db.models import Q
             queryset = queryset.filter(
-                Q(name__icontains=search_query) | 
+                Q(name__icontains=search_query) |
                 Q(description__icontains=search_query) |
                 Q(category__icontains=search_query)
             )
@@ -28,15 +33,15 @@ class ProductListCreateView(generics.ListCreateAPIView):
             queryset = queryset.order_by(ordering)
         else:
             queryset = queryset.order_by('-created_at')
-            
+
         return queryset
 
     def create(self, request, *args, **kwargs):
-        # Expecting 'vendor_id' in data for now since we trust local usage, 
+        # Expecting 'vendor_id' in data for now since we trust local usage,
         # but in production use request.user
         vendor_id = request.data.get('vendor')
         vendor = get_object_or_404(UserProfile, id=vendor_id)
-        
+
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             print(f"Product Creation Validation Error: {serializer.errors}")
@@ -75,15 +80,15 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         # The 'images' list in the request is treated as the definitive list.
         # 1. Identify existing images in DB
         current_images = {img.image_url: img for img in ProductImage.objects.filter(product=instance)}
-        
+
         # 2. Get incoming list of URLs (both kept existing ones and new ones)
         incoming_urls = request.data.get('images', [])
-        
+
         # 3. Determine deletions (In DB but not in incoming list)
         for url, img_obj in current_images.items():
             if url not in incoming_urls:
                 img_obj.delete()
-                
+
         # 4. Determine additions (In incoming list but not in DB)
         for url in incoming_urls:
             if url not in current_images:
@@ -106,7 +111,7 @@ class ProductReviewListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         product_id = self.kwargs['product_id']
         product = get_object_or_404(Product, id=product_id)
-        
+
         user_id = self.request.data.get('user')
         user = get_object_or_404(UserProfile, id=user_id)
         
@@ -119,3 +124,10 @@ class ProductReviewListCreateView(generics.ListCreateAPIView):
 class ProductReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProductReview.objects.all()
     serializer_class = ProductReviewSerializer
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_banners(request):
+    banners = AutoScrollImages.objects.filter(is_active=True).order_by('order')
+    serializer = AutoScrollImageSerializer(banners, many=True)
+    return Response(serializer.data)

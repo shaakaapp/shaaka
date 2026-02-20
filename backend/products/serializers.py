@@ -53,6 +53,7 @@ class ProductSerializer(serializers.ModelSerializer):
         instance.save()
         
         # Update variants if provided
+        # Update variants if provided
         if variants_data is not None:
             # For simplicity, we can delete existing and re-create, or update intelligently.
             # Re-creating is safer for simple lists.
@@ -61,3 +62,8 @@ class ProductSerializer(serializers.ModelSerializer):
                 ProductVariant.objects.create(product=instance, **variant_data)
                 
         return instance
+
+class AutoScrollImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AutoScrollImages
+        fields = ['id', 'image', 'title', 'placement', 'order']
