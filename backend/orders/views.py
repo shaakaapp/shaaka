@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from .models import Cart, CartItem, Order, OrderItem
+from .models import Cart, CartItem, Order, OrderItem, CancelledOrder
 from products.models import Product, ProductVariant
 from users.models import UserProfile
 from .serializers import CartSerializer, OrderSerializer
@@ -245,3 +245,52 @@ def get_order_details(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     serializer = OrderSerializer(order)
     return Response(serializer.data)
+
+@api_view(['POST'])
+@transaction.atomic
+def cancel_order(request, user_id, order_id):
+    try:
+        user = UserProfile.objects.get(id=user_id)
+        order = get_object_or_404(Order, id=order_id, user=user)
+
+        if order.status not in ['Placed', 'Processing']:
+            return Response({'error': f"Order cannot be cancelled. Current status is {order.status}."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        reason = request.data.get('reason', '')
+        
+        # Check if already cancelled
+        if hasattr(order, 'cancellation'):
+           return Response({'error': 'Order is already cancelled'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Restore Stock
+        for item in order.items.all():
+            product = item.product
+            if product:
+                # Based on how place_order deducts stock:
+                # If it's a variant, item.product_name != product.name (appends " (qty unit)")
+                if item.product_name != product.name:
+                    # It's a variant. Try to find the exact variant by price_at_purchase.
+                    # As place_order assigns variant.price to price_at_purchase.
+                    variant = ProductVariant.objects.filter(product=product, price=item.price_at_purchase).first()
+                    if variant:
+                        variant.stock_quantity = float(variant.stock_quantity) + float(item.quantity)
+                        variant.save()
+                
+                # Restore global product stock (applies to both variants and standard)
+                product.stock_quantity = float(product.stock_quantity) + float(item.quantity)
+                product.save()
+
+        # Update order status
+        order.status = 'Cancelled'
+        order.save()
+
+        # Create cancellation record
+        CancelledOrder.objects.create(order=order, reason=reason)
+
+        serializer = OrderSerializer(order)
+        return Response(serializer.data)
+        
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

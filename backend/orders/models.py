@@ -90,3 +90,14 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product_name}"
+
+class CancelledOrder(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='cancellation')
+    reason = models.TextField(blank=True, null=True)
+    cancelled_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'cancelled_orders'
+
+    def __str__(self):
+        return f"Cancellation for Order #{self.order.id}"
