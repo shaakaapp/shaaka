@@ -70,65 +70,67 @@ class _ProductCardState extends State<ProductCard> {
             ),
           ],
         ),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             // Image Area
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Stack(
-                  children: [
-                     Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: widget.product.firstImageUrl != null
-                          ? Image.network(
-                              widget.product.firstImageUrl!,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  Icons.broken_image_rounded,
-                                  size: 30,
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                                );
-                              },
-                            )
-                          : Icon(
-                              Icons.image_not_supported_rounded,
-                              size: 30,
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                            ),
-                      ),
-                     ),
-                     // Stock Badge (if needed, e.g. Out of stock)
-                     if (widget.product.stockQuantity == 0)
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppTheme.errorRed.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'Out',
-                              style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+            Expanded(
+              child: AspectRatio(
+                aspectRatio: 1.0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Stack(
+                    children: [
+                       Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: widget.product.firstImageUrl != null
+                            ? Image.network(
+                                widget.product.firstImageUrl!,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                    Icons.broken_image_rounded,
+                                    size: 30,
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  );
+                                },
+                              )
+                            : Icon(
+                                Icons.image_not_supported_rounded,
+                                size: 30,
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                              ),
+                        ),
+                       ),
+                       // Stock Badge (if needed, e.g. Out of stock)
+                       if (widget.product.stockQuantity == 0)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.errorRed.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'Out',
+                                style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
-                        ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             // Info Area
             Text(
               widget.product.name,

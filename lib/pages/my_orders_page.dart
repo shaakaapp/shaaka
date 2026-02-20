@@ -41,22 +41,49 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
     }
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Placed': return Colors.blue;
-      case 'Processing': return Colors.orange;
-      case 'Shipped': return Colors.purple;
-      case 'Delivered': return Colors.green;
-      case 'Cancelled': return Colors.red;
-      default: return Colors.grey;
+  Widget _buildStatusText(Order order) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    if (order.status == 'Delivered') {
+      return Text(
+        'Delivered ${DateFormat('d MMMM').format(order.createdAt)}', 
+        style: TextStyle(color: Colors.grey[700], fontSize: 14),
+      );
+    } else if (order.status == 'Cancelled') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Cancelled', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black)),
+          const SizedBox(height: 2),
+          Text(
+            order.isPaid ? 'Your refund has been initiated.' : 'Your order has been cancelled.', 
+            style: TextStyle(color: Colors.grey[600], fontSize: 13)
+          ),
+        ],
+      );
+    } else if (order.status == 'Processing' || order.status == 'Shipped') {
+      return Text(
+        order.status == 'Shipped' ? 'Arriving Soon' : 'Preparing for Dispatch',
+        style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 15),
+      );
+    } else {
+      // Placed
+      return Text(
+        'Ordered ${DateFormat('d MMMM').format(order.createdAt)}',
+        style: TextStyle(color: Colors.grey[700], fontSize: 14),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('My Orders'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
         automaticallyImplyLeading: false, // customized leading override
         leading: widget.showBackButton 
             ? IconButton(
@@ -72,32 +99,73 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           : _orders.isEmpty
               ? const Center(child: Text('No orders yet'))
               : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   itemCount: _orders.length,
                   itemBuilder: (context, index) {
                     final order = _orders[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: ListTile(
-                        onTap: () {
-                           Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OrderDetailPage(orderId: order.id),
-                            ),
-                          );
-                        },
-                        title: Text('Order #${order.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(DateFormat('MMM dd, yyyy').format(order.createdAt)),
-                            Text('₹${order.totalAmount.toStringAsFixed(2)}'),
-                          ],
+                    final firstItem = order.items.isNotEmpty ? order.items.first : null;
+                    final itemName = firstItem != null 
+                        ? '${firstItem.productName}${order.items.length > 1 ? ' + ${order.items.length - 1} more' : ''}'
+                        : 'Order #${order.id}';
+                    
+                    return GestureDetector(
+                      onTap: () {
+                         Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OrderDetailPage(orderId: order.id),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
                         ),
-                        trailing: Chip(
-                          label: Text(order.status, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                          backgroundColor: _getStatusColor(order.status),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Product Image (Square container)
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: firstItem?.productImageUrl != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        firstItem!.productImageUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
+                                      ),
+                                    )
+                                  : const Icon(Icons.shopping_bag, color: Colors.grey, size: 40),
+                            ),
+                            const SizedBox(width: 16),
+                            
+                            // Details Column
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    itemName,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _buildStatusText(order),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );

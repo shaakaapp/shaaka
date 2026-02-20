@@ -377,59 +377,73 @@ class _AddProductPageState extends State<AddProductPage> {
                            int idx = entry.key;
                            Map<String, dynamic> variant = entry.value;
                            return Padding(
-                             padding: const EdgeInsets.only(bottom: 8.0),
-                             child: Row(
-                               children: [
-                                 Expanded(
-                                   flex: 2,
-                                   child: TextFormField(
-                                     initialValue: variant['quantity'].toString(),
-                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                     decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
-                                     onChanged: (val) => variant['quantity'] = double.tryParse(val) ?? 0,
+                             padding: const EdgeInsets.only(bottom: 12.0),
+                             child: Container(
+                               padding: const EdgeInsets.all(12),
+                               decoration: BoxDecoration(
+                                 color: Colors.white,
+                                 borderRadius: BorderRadius.circular(8),
+                                 border: Border.all(color: Colors.grey.shade300),
+                               ),
+                               child: Column(
+                                 children: [
+                                   Row(
+                                     children: [
+                                       Expanded(
+                                         child: TextFormField(
+                                           initialValue: variant['quantity'].toString(),
+                                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                           decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
+                                           onChanged: (val) => variant['quantity'] = double.tryParse(val) ?? 0,
+                                         ),
+                                       ),
+                                       const SizedBox(width: 8),
+                                       Expanded(
+                                         child: DropdownButtonFormField<String>(
+                                           value: _units.contains(variant['unit']) ? variant['unit'] : _units.first,
+                                           isExpanded: true,
+                                           decoration: const InputDecoration(
+                                             labelText: 'Unit', 
+                                             isDense: true, 
+                                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                             border: OutlineInputBorder()
+                                           ),
+                                           items: _units.map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
+                                           onChanged: (val) => variant['unit'] = val,
+                                         ),
+                                       ),
+                                       IconButton(
+                                         icon: const Icon(Icons.delete, color: Colors.red),
+                                         onPressed: () => setState(() => _variantsList.removeAt(idx)),
+                                       ),
+                                     ],
                                    ),
-                                 ),
-                                 const SizedBox(width: 8),
-                                 Expanded(
-                                   flex: 2,
-                                   child: DropdownButtonFormField<String>(
-                                     value: _units.contains(variant['unit']) ? variant['unit'] : _units.first,
-                                     isExpanded: true,
-                                     decoration: const InputDecoration(
-                                       labelText: 'Unit', 
-                                       isDense: true, 
-                                       contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                       border: OutlineInputBorder()
-                                     ),
-                                     items: _units.map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
-                                     onChanged: (val) => variant['unit'] = val,
+                                   const SizedBox(height: 12),
+                                   Row(
+                                     children: [
+                                       Expanded(
+                                         child: TextFormField(
+                                           initialValue: variant['price'].toString(),
+                                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                           decoration: const InputDecoration(labelText: 'Price (₹)', isDense: true, border: OutlineInputBorder()),
+                                           onChanged: (val) => variant['price'] = double.tryParse(val) ?? 0,
+                                         ),
+                                       ),
+                                       const SizedBox(width: 8),
+                                       Expanded(
+                                         child: TextFormField(
+                                           initialValue: (variant['stock_quantity'] ?? 0).toString(),
+                                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                           decoration: const InputDecoration(labelText: 'Stock', isDense: true, border: OutlineInputBorder()),
+                                           onChanged: (val) => variant['stock_quantity'] = double.tryParse(val) ?? 0,
+                                         ),
+                                       ),
+                                       // Placeholder to align with the delete button above
+                                       const SizedBox(width: 48),
+                                     ],
                                    ),
-                                 ),
-                                 const SizedBox(width: 8),
-                                  Expanded(
-                                    flex: 2,
-                                    child: TextFormField(
-                                      initialValue: variant['price'].toString(),
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                      decoration: const InputDecoration(labelText: 'Price', isDense: true, border: OutlineInputBorder()),
-                                      onChanged: (val) => variant['price'] = double.tryParse(val) ?? 0,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    flex: 2,
-                                    child: TextFormField(
-                                      initialValue: (variant['stock_quantity'] ?? 0).toString(),
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                      decoration: const InputDecoration(labelText: 'Stock', isDense: true, border: OutlineInputBorder()),
-                                      onChanged: (val) => variant['stock_quantity'] = double.tryParse(val) ?? 0,
-                                    ),
-                                  ),
-                                  IconButton(
-                                   icon: const Icon(Icons.delete, color: Colors.red),
-                                   onPressed: () => setState(() => _variantsList.removeAt(idx)),
-                                 ),
-                               ],
+                                 ],
+                               ),
                              ),
                            );
                          }).toList(),

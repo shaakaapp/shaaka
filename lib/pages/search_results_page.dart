@@ -221,12 +221,20 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
                         child: TextField(
                           controller: minPriceController,
                           keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
                           decoration: const InputDecoration(
                             labelText: 'Min',
                             hintText: '0',
                           ),
                           onChanged: (value) {
-                            tempMinPrice = value.isEmpty ? null : double.tryParse(value);
+                            if (value.trim().isEmpty) {
+                              tempMinPrice = null;
+                            } else {
+                              tempMinPrice = double.tryParse(value);
+                            }
+                          },
+                          onSubmitted: (_) {
+                            FocusScope.of(context).unfocus();
                           },
                         ),
                       ),
@@ -235,12 +243,20 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
                         child: TextField(
                           controller: maxPriceController,
                           keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
                           decoration: const InputDecoration(
                             labelText: 'Max',
                             hintText: '10000',
                           ),
                           onChanged: (value) {
-                            tempMaxPrice = value.isEmpty ? null : double.tryParse(value);
+                            if (value.trim().isEmpty) {
+                              tempMaxPrice = null;
+                            } else {
+                              tempMaxPrice = double.tryParse(value);
+                            }
+                          },
+                          onSubmitted: (_) {
+                            FocusScope.of(context).unfocus();
                           },
                         ),
                       ),
@@ -426,107 +442,117 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _showSortDialog,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _showSortDialog,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12, // slightly reduced padding
+                          vertical: 8,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.sort_rounded,
-                            size: 18,
-                            color: Theme.of(context).colorScheme.primary,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _sortBy,
-                            style: TextStyle(
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.sort_rounded,
+                              size: 18,
                               color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 18,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _sortBy,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _showFilterDialog,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: hasActiveFilters
-                            ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
-                            : Theme.of(context).scaffoldBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: hasActiveFilters
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                          width: hasActiveFilters ? 1.5 : 1,
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _showFilterDialog,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12, // slightly reduced padding
+                          vertical: 8,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.tune_rounded,
-                            size: 18,
+                        decoration: BoxDecoration(
+                          color: hasActiveFilters
+                              ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
+                              : Theme.of(context).scaffoldBackgroundColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
                             color: hasActiveFilters
                                 ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).textTheme.bodyMedium!.color!,
+                                : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                            width: hasActiveFilters ? 1.5 : 1,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Filter',
-                            style: TextStyle(
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.tune_rounded,
+                              size: 18,
                               color: hasActiveFilters
                                   ? Theme.of(context).colorScheme.primary
                                   : Theme.of(context).textTheme.bodyMedium!.color!,
-                              fontWeight: hasActiveFilters
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
                             ),
-                          ),
-                          if (hasActiveFilters) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                shape: BoxShape.circle,
+                            const SizedBox(width: 8),
+                            Text(
+                              'Filter',
+                              style: TextStyle(
+                                color: hasActiveFilters
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).textTheme.bodyMedium!.color!,
+                                fontWeight: hasActiveFilters
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
                               ),
                             ),
+                            if (hasActiveFilters) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),

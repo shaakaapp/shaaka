@@ -99,18 +99,3 @@ def update_product_rating(sender, instance, **kwargs):
     product.average_rating = stats['avg_rating'] or 0.0
     product.rating_count = stats['count'] or 0
     product.save(update_fields=['average_rating', 'rating_count'])
-
-class AutoScrollImages(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    image = models.CharField(max_length=100)
-    title = models.CharField(max_length=255, blank=True, null=True)
-    is_active = models.BooleanField()
-    order = models.IntegerField()
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    placement = models.CharField(max_length=20)
-
-    class Meta:
-        managed = False
-        db_table = 'auto_scroll_images'
-

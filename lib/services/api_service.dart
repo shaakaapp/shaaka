@@ -739,6 +739,44 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> cancelOrder(int userId, int orderId, {String reason = ''}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders/$userId/cancel/$orderId/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'reason': reason}),
+      );
+
+      dynamic decodedBody;
+      try {
+        decodedBody = jsonDecode(response.body);
+      } catch (e) {
+        // Backend didn't return JSON (probably an HTML error page, e.g., 404 or 502)
+        return {
+          'success': false,
+          'error': 'Server error: ${response.statusCode}. (The API might still be deploying)',
+        };
+      }
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': Order.fromJson(decodedBody),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': decodedBody,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
 
 
   // --- ADDRESS API ---

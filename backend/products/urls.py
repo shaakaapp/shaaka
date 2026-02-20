@@ -4,8 +4,7 @@ from .views import (
     VendorProductListView, 
     ProductDetailView,
     ProductReviewListCreateView,
-    ProductReviewDetailView,
-    get_banners
+    ProductReviewDetailView
 )
 
 urlpatterns = [
@@ -14,5 +13,4 @@ urlpatterns = [
     path('products/vendor/<int:vendor_id>/', VendorProductListView.as_view(), name='vendor-product-list'),
     path('products/<int:product_id>/reviews/', ProductReviewListCreateView.as_view(), name='product-review-list-create'),
     path('reviews/<int:pk>/', ProductReviewDetailView.as_view(), name='product-review-detail'),
-    path('products/banners/', get_banners, name='product-banners'),
 ]

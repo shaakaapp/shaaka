@@ -74,6 +74,7 @@ class OrderItem {
   final int id;
   final int? productId; // Nullable if product deleted
   final String productName;
+  final String? productImageUrl; // Added for UI
   final double quantity;
   final double priceAtPurchase;
 
@@ -81,15 +82,22 @@ class OrderItem {
     required this.id,
     this.productId,
     required this.productName,
+    this.productImageUrl,
     required this.quantity,
     required this.priceAtPurchase,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
+    String? imageUrl;
+    if (json['product'] != null && json['product']['images'] != null && (json['product']['images'] as List).isNotEmpty) {
+      imageUrl = json['product']['images'][0]['image_url'];
+    }
+
     return OrderItem(
       id: json['id'],
       productId: json['product'] != null ? json['product']['id'] : null,
       productName: json['product_name'],
+      productImageUrl: imageUrl,
       quantity: double.parse(json['quantity'].toString()),
       priceAtPurchase: double.parse(json['price_at_purchase'].toString()),
     );
