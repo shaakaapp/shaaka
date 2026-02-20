@@ -16,13 +16,20 @@ class AutoScrollImage {
   });
 
   factory AutoScrollImage.fromJson(Map<String, dynamic> json) {
+    final String rawImage = json['image'] ?? '';
+    // If the image is a relative path like 'auto_scroll_images/...', prefix it with the base domain
+    // Assuming the base domain is the same as the ApiService baseUrl but pointing to /media/
+    final String fullImageUrl = rawImage.startsWith('http') 
+        ? rawImage 
+        : 'https://shaaka-33pq.onrender.com/media/$rawImage';
+
     return AutoScrollImage(
       id: json['id'],
-      image: json['image'],
+      image: fullImageUrl,
       title: json['title'],
       isActive: json['is_active'] ?? true,
       order: json['order'] ?? 0,
-      placement: json['placement'] ?? 'Top',
+      placement: json['placement']?.toString().toLowerCase() ?? 'top',
     );
   }
 }

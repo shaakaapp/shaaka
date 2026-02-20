@@ -67,23 +67,47 @@ class _StorePageState extends State<StorePage> {
   @override
   void initState() {
     super.initState();
-    _loadProducts();
-    if (!widget.isVendorView) {
-      _loadBanners();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    if (widget.isVendorView) {
+      await _loadProducts(); // Vendors don't need banners
+    } else {
+      await Future.wait([
+        _loadProducts(),
+        _loadBanners(),
+      ]);
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   Future<void> _loadBanners() async {
     final result = await ApiService.getAutoScrollImages();
+    print("AutoScroll Api Result: $result");
     if (mounted && result['success'] == true) {
       final List<dynamic> rawData = result['data'];
       final List<AutoScrollImage> allBanners = rawData.map((e) => AutoScrollImage.fromJson(e)).toList();
+      print("Parsed banners count: ${allBanners.length}");
       setState(() {
-        _topBanners = allBanners.where((b) => b.placement == 'Top').toList();
-        _bottomBanners = allBanners.where((b) => b.placement == 'Bottom').toList();
+        _topBanners = allBanners.where((b) => b.placement == 'top').toList();
+        _bottomBanners = allBanners.where((b) => b.placement == 'bottom').toList();
       });
+      print("Top Banners: ${_topBanners.length}, Bottom: ${_bottomBanners.length}");
       if (_topBanners.isNotEmpty) _startAutoScroll();
       if (_bottomBanners.isNotEmpty) _startBannerAutoScroll();
+    } else {
+        print("Failed to load banners or widget unmounted.");
     }
   }
 
@@ -130,11 +154,6 @@ class _StorePageState extends State<StorePage> {
   }
 
   Future<void> _loadProducts() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
     Map<String, dynamic> result;
     if (widget.isVendorView) {
         int? id = widget.vendorId;
@@ -155,7 +174,6 @@ class _StorePageState extends State<StorePage> {
 
     if (mounted) {
       setState(() {
-        _isLoading = false;
         if (result['success'] == true) {
           _products = result['data'];
           _filteredProducts = _products;
