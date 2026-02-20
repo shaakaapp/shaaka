@@ -10,6 +10,7 @@ import 'product_details_page.dart';
 import 'add_product_page.dart';
 import 'search_page.dart';
 import 'category_products_page.dart';
+import '../models/auto_scroll_image.dart';
 
 class StorePage extends StatefulWidget {
   final bool isVendorView;
@@ -60,32 +61,37 @@ class _StorePageState extends State<StorePage> {
   Timer? _carouselTimer;
   Timer? _bannerTimer; // Added for banner auto-scroll
   
-  final List<String> _carouselImages = [
-    'assets/images/carousel_1.png',
-    'assets/images/carousel_2.jpg',
-    'assets/images/carousel_3.png',
-  ];
-
-  final List<String> _bannerImages = [
-    'assets/images/banner_republic.png',
-    'assets/images/banner_valentines.jpg',
-  ];
+  List<AutoScrollImage> _topBanners = [];
+  List<AutoScrollImage> _bottomBanners = [];
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
     if (!widget.isVendorView) {
-      _startAutoScroll();
-      _startBannerAutoScroll(); // Start banner scroll
+      _loadBanners();
+    }
+  }
+
+  Future<void> _loadBanners() async {
+    final result = await ApiService.getAutoScrollImages();
+    if (mounted && result['success'] == true) {
+      final List<dynamic> rawData = result['data'];
+      final List<AutoScrollImage> allBanners = rawData.map((e) => AutoScrollImage.fromJson(e)).toList();
+      setState(() {
+        _topBanners = allBanners.where((b) => b.placement == 'Top').toList();
+        _bottomBanners = allBanners.where((b) => b.placement == 'Bottom').toList();
+      });
+      if (_topBanners.isNotEmpty) _startAutoScroll();
+      if (_bottomBanners.isNotEmpty) _startBannerAutoScroll();
     }
   }
 
   void _startAutoScroll() {
     _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (_carouselController.hasClients) {
+      if (_carouselController.hasClients && _topBanners.isNotEmpty) {
         int nextPage = _currentCarouselIndex + 1;
-        if (nextPage >= _carouselImages.length) {
+        if (nextPage >= _topBanners.length) {
           nextPage = 0;
         }
         _carouselController.animateToPage(
@@ -99,9 +105,9 @@ class _StorePageState extends State<StorePage> {
 
   void _startBannerAutoScroll() {
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (_bannerPageController.hasClients) {
+      if (_bannerPageController.hasClients && _bottomBanners.isNotEmpty) {
         int nextPage = (_bannerPageController.page?.round() ?? 0) + 1;
-        if (nextPage >= _bannerImages.length) {
+        if (nextPage >= _bottomBanners.length) {
           nextPage = 0;
         }
         _bannerPageController.animateToPage(
@@ -404,7 +410,7 @@ class _StorePageState extends State<StorePage> {
             child: CustomScrollView(
               slivers: [
                 // Carousel (Show only if not vendor mode AND not searching)
-                if (!widget.isVendorView && _searchController.text.isEmpty)
+                if (!widget.isVendorView && _searchController.text.isEmpty && _topBanners.isNotEmpty)
                   SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,7 +422,7 @@ class _StorePageState extends State<StorePage> {
                             children: [
                               PageView.builder(
                                 controller: _carouselController,
-                                itemCount: _carouselImages.length,
+                                itemCount: _topBanners.length,
                                 onPageChanged: (index) {
                                   setState(() {
                                     _currentCarouselIndex = index;
@@ -425,8 +431,8 @@ class _StorePageState extends State<StorePage> {
                                 itemBuilder: (context, index) {
                                   return Transform.scale(
                                     scale: 1.08, // Zoom in slightly to crop out any edge watermarks
-                                    child: Image.asset(
-                                      _carouselImages[index],
+                                    child: Image.network(
+                                      _topBanners[index].image,
                                       fit: BoxFit.cover,
                                       width: double.infinity,
                                       errorBuilder: (context, error, stackTrace) => Container(
@@ -443,7 +449,7 @@ class _StorePageState extends State<StorePage> {
                                 right: 0,
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: _carouselImages.asMap().entries.map((entry) {
+                                  children: _topBanners.asMap().entries.map((entry) {
                                     return AnimatedContainer(
                                       duration: const Duration(milliseconds: 300),
                                       width: _currentCarouselIndex == entry.key ? 20.0 : 8.0,
@@ -630,7 +636,7 @@ class _StorePageState extends State<StorePage> {
                     ),
 
                   // Promotional Banners
-                  if (!widget.isVendorView)
+                  if (!widget.isVendorView && _bottomBanners.isNotEmpty)
                   SliverToBoxAdapter(
                     child: Container(
                       height: 180, // Increased height slightly
@@ -639,7 +645,7 @@ class _StorePageState extends State<StorePage> {
                         children: [
                           PageView.builder(
                             controller: _bannerPageController,
-                            itemCount: _bannerImages.length,
+                            itemCount: _bottomBanners.length,
                             onPageChanged: (index) {
                               setState(() {
                                 _currentBannerIndex = index;
@@ -650,10 +656,14 @@ class _StorePageState extends State<StorePage> {
                                 margin: const EdgeInsets.symmetric(horizontal: 16), // Consistent side padding
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(16),
-                                  child: Image.asset(
-                                    _bannerImages[index],
+                                  child: Image.network(
+                                    _bottomBanners[index].image,
                                     fit: BoxFit.cover,
                                     width: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                        color: Colors.grey[300],
+                                        child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                                    ),
                                   ),
                                 ),
                               );
@@ -666,7 +676,7 @@ class _StorePageState extends State<StorePage> {
                             right: 0,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: _bannerImages.asMap().entries.map((entry) {
+                              children: _bottomBanners.asMap().entries.map((entry) {
                                 return AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
                                   width: _currentBannerIndex == entry.key ? 20.0 : 8.0,

@@ -1,6 +1,11 @@
 from rest_framework import serializers
-from .models import Product, ProductImage, ProductReview, ProductVariant
+from .models import Product, ProductImage, ProductReview, ProductVariant, AutoScrollImage
 from users.serializers import UserProfileSerializer
+
+class AutoScrollImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AutoScrollImage
+        fields = ['id', 'image', 'title', 'is_active', 'order', 'placement']
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:

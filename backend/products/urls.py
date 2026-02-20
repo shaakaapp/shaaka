@@ -4,11 +4,13 @@ from .views import (
     VendorProductListView, 
     ProductDetailView,
     ProductReviewListCreateView,
-    ProductReviewDetailView
+    ProductReviewDetailView,
+    AutoScrollImageListView
 )
 
 urlpatterns = [
     path('products/', ProductListCreateView.as_view(), name='product-list-create'),
+    path('products/auto-scroll-images/', AutoScrollImageListView.as_view(), name='auto-scroll-image-list'),
     path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
     path('products/vendor/<int:vendor_id>/', VendorProductListView.as_view(), name='vendor-product-list'),
     path('products/<int:product_id>/reviews/', ProductReviewListCreateView.as_view(), name='product-review-list-create'),

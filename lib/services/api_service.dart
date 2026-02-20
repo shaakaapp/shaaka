@@ -777,7 +777,33 @@ class ApiService {
     }
   }
 
+  // --- AUTO SCROLL IMAGES ---
+  static Future<Map<String, dynamic>> getAutoScrollImages() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/products/auto-scroll-images/'),
+        headers: {'Content-Type': 'application/json'},
+      );
 
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'data': data,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
 
   // --- ADDRESS API ---
 
