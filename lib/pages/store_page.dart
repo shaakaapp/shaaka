@@ -104,14 +104,17 @@ class _StorePageState extends State<StorePage> {
         _bottomBanners = allBanners.where((b) => b.placement == 'bottom').toList();
       });
       print("Top Banners: ${_topBanners.length}, Bottom: ${_bottomBanners.length}");
-      if (_topBanners.isNotEmpty) _startAutoScroll();
-      if (_bottomBanners.isNotEmpty) _startBannerAutoScroll();
+      _startAutoScroll();
+      _startBannerAutoScroll();
     } else {
         print("Failed to load banners or widget unmounted.");
     }
   }
 
   void _startAutoScroll() {
+    _carouselTimer?.cancel();
+    if (_topBanners.isEmpty) return;
+    
     _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_carouselController.hasClients && _topBanners.isNotEmpty) {
         int nextPage = _currentCarouselIndex + 1;
@@ -128,6 +131,9 @@ class _StorePageState extends State<StorePage> {
   }
 
   void _startBannerAutoScroll() {
+    _bannerTimer?.cancel();
+    if (_bottomBanners.isEmpty) return;
+
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (_bannerPageController.hasClients && _bottomBanners.isNotEmpty) {
         int nextPage = (_bannerPageController.page?.round() ?? 0) + 1;
@@ -424,7 +430,7 @@ class _StorePageState extends State<StorePage> {
         // Scrollable Content
         Expanded(
           child: RefreshIndicator(
-            onRefresh: _loadProducts,
+            onRefresh: _loadData,
             child: CustomScrollView(
               slivers: [
                 // Carousel (Show only if not vendor mode AND not searching)
