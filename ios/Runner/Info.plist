@@ -45,5 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Added Permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to the camera to take profile pictures.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>This app requires access to your contacts to connect with friends.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to the microphone for audio features.</string>
 </dict>
 </plist>

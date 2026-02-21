@@ -7,7 +7,8 @@ class UserAddressSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'full_name', 'mobile_number', 'pincode', 
             'flat_house_building', 'area_street_sector', 'landmark', 
-            'town_city', 'state', 'country', 'is_default', 'delivery_instructions'
+            'town_city', 'state', 'country', 'is_default', 'delivery_instructions',
+            'google_maps_link'
         ]
         read_only_fields = ['id', 'user']
 
@@ -22,7 +23,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'id', 'full_name', 'mobile_number', 'password',
             'gender', 'category', 'address_line', 'city',
             'state', 'country', 'pincode', 'latitude', 'longitude',
-            'profile_pic_url', 'created_at', 'updated_at'
+            'google_maps_link', 'profile_pic_url', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
+import '../services/location_service.dart';
 
 class AddressFormPage extends StatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -29,6 +30,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
   String _selectedCountry = 'India';
   String _selectedState = 'TELANGANA'; // Default as per screenshot
   bool _isDefault = false;
+  double? _latitude;
+  double? _longitude;
 
   // Dropdown options
   final List<String> _countries = ['India'];
@@ -92,6 +95,55 @@ class _AddressFormPageState extends State<AddressFormPage> {
     super.dispose();
   }
 
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLoading = true);
+    try {
+      final position = await LocationService.getCurrentPosition();
+      if (position != null) {
+        final placemark = await LocationService.getAddressFromCoordinates(
+            position.latitude, position.longitude);
+        if (placemark != null) {
+          setState(() {
+            _pincodeController.text = placemark.postalCode ?? '';
+            _townCityController.text = placemark.locality ?? placemark.subAdministrativeArea ?? '';
+            _areaController.text = placemark.subLocality ?? placemark.thoroughfare ?? '';
+            _landmarkController.text = placemark.name ?? '';
+            _latitude = position.latitude;
+            _longitude = position.longitude;
+            
+            // Try to match state
+            String? mappedState;
+            if (placemark.administrativeArea != null) {
+                String adminArea = placemark.administrativeArea!.toUpperCase();
+                for (String state in _states) {
+                    if (adminArea.contains(state) || state.contains(adminArea)) {
+                        mappedState = state;
+                        break;
+                    }
+                }
+            }
+            if (mappedState != null) {
+                _selectedState = mappedState;
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location fetched successfully!'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+         ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not access location. Please check permissions.'), backgroundColor: Colors.red),
+          );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error getting location: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _saveAddress() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -113,6 +165,10 @@ class _AddressFormPageState extends State<AddressFormPage> {
         'is_default': _isDefault,
         'delivery_instructions': _deliveryInstructionsController.text.trim(),
       };
+
+      if (_latitude != null && _longitude != null) {
+        addressData['google_maps_link'] = 'https://www.google.com/maps/search/?api=1&query=$_latitude,$_longitude';
+      }
 
       Map<String, dynamic> result;
       if (widget.initialData != null && widget.initialData!['id'] != null) {
@@ -161,7 +217,17 @@ class _AddressFormPageState extends State<AddressFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Edit your delivery address', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Edit your delivery address', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        TextButton.icon(
+                          onPressed: _getCurrentLocation,
+                          icon: const Icon(Icons.my_location, color: Colors.blue),
+                          label: const Text('Use Current Location', style: TextStyle(color: Colors.blue)),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
                     
                     // Country Dropdown

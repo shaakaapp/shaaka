@@ -23,6 +23,7 @@ class UserProfile(models.Model):
     pincode = models.CharField(max_length=10, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
+    google_maps_link = models.URLField(max_length=500, blank=True, null=True)
     profile_pic_url = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
@@ -59,6 +60,7 @@ class UserAddress(models.Model):
     country = models.CharField(max_length=120, default='India')
     is_default = models.BooleanField(default=False)
     delivery_instructions = models.TextField(blank=True, null=True)
+    google_maps_link = models.URLField(max_length=500, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

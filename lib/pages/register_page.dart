@@ -197,10 +197,41 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  Future<void> _pickImage() async {
+  void _showImageSourceActionSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: 800,
         maxHeight: 800,
         imageQuality: 85,
@@ -590,7 +621,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 shape: const CircleBorder(),
                                 elevation: 4,
                                 child: InkWell(
-                                  onTap: _isLoading ? null : _pickImage,
+                                  onTap: _isLoading ? null : _showImageSourceActionSheet,
                                   borderRadius: BorderRadius.circular(24),
                                   child: Container(
                                     width: 40,

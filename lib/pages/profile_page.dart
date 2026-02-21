@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../constants/location_data.dart';
 import '../theme/app_theme.dart';
+import '../services/location_service.dart';
 import 'login_page.dart';
 
 
@@ -37,6 +38,8 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _selectedGender;
   String? _selectedCountry;
   String? _selectedState;
+  double? _latitude;
+  double? _longitude;
   final List<String> _genders = ['Male', 'Female', 'Other'];
   XFile? _profileImage;
   Uint8List? _profileImageBytes;
@@ -126,10 +129,41 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _pickImage() async {
+  void _showImageSourceActionSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: 800,
         maxHeight: 800,
         imageQuality: 85,
@@ -201,6 +235,64 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLoading = true);
+    try {
+      final position = await LocationService.getCurrentPosition();
+      if (position != null) {
+        final placemark = await LocationService.getAddressFromCoordinates(
+            position.latitude, position.longitude);
+        if (placemark != null) {
+          setState(() {
+            _pincodeController.text = placemark.postalCode ?? '';
+            _cityController.text = placemark.locality ?? placemark.subAdministrativeArea ?? '';
+            _addressController.text = [
+                placemark.name,
+                placemark.thoroughfare,
+                placemark.subLocality
+            ].where((e) => e != null && e.isNotEmpty).join(', ');
+            
+            _latitude = position.latitude;
+            _longitude = position.longitude;
+
+            // Set country to India (static for now, but could be dynamic)
+            _selectedCountry = 'India';
+
+            // Try to match state
+            String? mappedState;
+            if (placemark.administrativeArea != null && LocationData.countryStateMap.containsKey(_selectedCountry)) {
+                String adminArea = placemark.administrativeArea!.toUpperCase();
+                for (String state in LocationData.countryStateMap[_selectedCountry]!) {
+                    if (adminArea.contains(state) || state.contains(adminArea)) {
+                        mappedState = state;
+                        break;
+                    }
+                }
+            }
+            if (mappedState != null) {
+                _selectedState = mappedState;
+            } else {
+                _selectedState = null;
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location fetched successfully!'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+         ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not access location. Please check permissions.'), backgroundColor: Colors.red),
+          );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error getting location: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
 
 
   Future<void> _updateProfile() async {
@@ -225,6 +317,10 @@ class _ProfilePageState extends State<ProfilePage> {
           ? null
           : _pincodeController.text.trim(),
     };
+
+    if (_latitude != null && _longitude != null) {
+        userData['google_maps_link'] = 'https://www.google.com/maps/search/?api=1&query=$_latitude,$_longitude';
+    }
 
     final result = await ApiService.updateProfile(_userProfile!.id!, userData);
 
@@ -413,7 +509,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           shape: const CircleBorder(),
                           elevation: 4,
                           child: InkWell(
-                            onTap: _isLoading ? null : _pickImage,
+                            onTap: _isLoading ? null : _showImageSourceActionSheet,
                             borderRadius: BorderRadius.circular(24),
                             child: Container(
                               width: 40,
@@ -505,12 +601,23 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Address Information',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Address Information',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (_isEditing)
+                          TextButton.icon(
+                            onPressed: _getCurrentLocation,
+                            icon: const Icon(Icons.my_location, color: Colors.blue),
+                            label: const Text('Use Current Location', style: TextStyle(color: Colors.blue)),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

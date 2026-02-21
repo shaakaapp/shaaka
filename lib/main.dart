@@ -9,6 +9,7 @@ import 'pages/home_customer_page.dart';
 import 'pages/home_vendor_page.dart';
 import 'pages/home_women_merchant_page.dart';
 import 'services/storage_service.dart';
+import 'services/permission_service.dart';
 
 import 'package:flutter/services.dart';
 
@@ -119,6 +120,9 @@ class _AuthCheckState extends State<AuthCheck> {
   }
 
   Future<void> _checkSession() async {
+    // Request permissions before proceeding
+    await PermissionService.requestAppPermissions();
+
     final userId = await StorageService.getUserId();
     final userCategory = await StorageService.getUserCategory();
 
