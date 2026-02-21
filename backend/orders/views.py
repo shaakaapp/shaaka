@@ -7,7 +7,10 @@ from .models import Cart, CartItem, Order, OrderItem, CancelledOrder
 from products.models import Product, ProductVariant
 from users.models import UserProfile
 from .serializers import CartSerializer, OrderSerializer
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers
 
+@extend_schema(responses={200: CartSerializer})
 @api_view(['GET'])
 def get_cart(request, user_id):
     try:
@@ -18,6 +21,17 @@ def get_cart(request, user_id):
     except UserProfile.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
+@extend_schema(
+    request=inline_serializer(
+        name='AddToCartRequest',
+        fields={
+            'product_id': serializers.IntegerField(),
+            'quantity': serializers.IntegerField(default=1),
+            'unit_value': serializers.FloatField(default=1.0),
+        }
+    ),
+    responses={200: CartSerializer}
+)
 @api_view(['POST'])
 def add_to_cart(request, user_id):
     try:
@@ -79,6 +93,13 @@ def add_to_cart(request, user_id):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(
+    request=inline_serializer(
+        name='UpdateCartItemRequest',
+        fields={'quantity': serializers.FloatField()}
+    ),
+    responses={200: CartSerializer}
+)
 @api_view(['PUT'])
 def update_cart_item(request, user_id, item_id):
     try:
@@ -117,6 +138,7 @@ def update_cart_item(request, user_id, item_id):
     except Cart.DoesNotExist:
         return Response({'error': 'Cart not found'}, status=status.HTTP_404_NOT_FOUND)
 
+@extend_schema(responses={200: CartSerializer})
 @api_view(['DELETE'])
 def remove_from_cart(request, user_id, item_id):
     try:
@@ -129,6 +151,7 @@ def remove_from_cart(request, user_id, item_id):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(responses={200: CartSerializer})
 @api_view(['DELETE'])
 def clear_cart(request, user_id):
     try:
@@ -139,6 +162,19 @@ def clear_cart(request, user_id):
     except Exception as e:
          return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(
+    request=inline_serializer(
+        name='PlaceOrderRequest',
+        fields={
+            'shipping_address': serializers.CharField(required=False),
+            'city': serializers.CharField(required=False),
+            'state': serializers.CharField(required=False),
+            'pincode': serializers.CharField(required=False),
+            'payment_method': serializers.CharField(default='COD'),
+        }
+    ),
+    responses={201: OrderSerializer}
+)
 @api_view(['POST'])
 @transaction.atomic
 def place_order(request, user_id):
@@ -229,6 +265,7 @@ def place_order(request, user_id):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(responses={200: OrderSerializer(many=True)})
 @api_view(['GET'])
 def get_orders(request, user_id):
     try:
@@ -240,12 +277,20 @@ def get_orders(request, user_id):
     except UserProfile.DoesNotExist:
          return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
+@extend_schema(responses={200: OrderSerializer})
 @api_view(['GET'])
 def get_order_details(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     serializer = OrderSerializer(order)
     return Response(serializer.data)
 
+@extend_schema(
+    request=inline_serializer(
+        name='CancelOrderRequest',
+        fields={'reason': serializers.CharField(required=False)}
+    ),
+    responses={200: OrderSerializer}
+)
 @api_view(['POST'])
 @transaction.atomic
 def cancel_order(request, user_id, order_id):

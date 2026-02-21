@@ -15,6 +15,12 @@ from datetime import timedelta
 import cloudinary
 import cloudinary.uploader
 from decouple import config
+from drf_spectacular.utils import extend_schema, OpenApiTypes
+from rest_framework import serializers
+
+class UploadImageSerializer(serializers.Serializer):
+    image = serializers.FileField()
+    type = serializers.CharField(required=False, default='profile')
 
 # Configure Cloudinary
 cloudinary.config(
@@ -44,6 +50,7 @@ def cleanup_expired_otps():
         del otp_storage[number]
 
 
+@extend_schema(request=UploadImageSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 def upload_image(request):
     """Upload image to Cloudinary."""
@@ -93,6 +100,7 @@ def upload_image(request):
         )
 
 
+@extend_schema(request=OTPRequestSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 def request_otp(request):
     """Request OTP for registration."""
@@ -142,6 +150,7 @@ def request_otp(request):
     }, status=status.HTTP_200_OK)
 
 
+@extend_schema(request=OTPSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 def verify_otp(request):
     """Verify OTP and register user."""
@@ -195,6 +204,7 @@ def verify_otp(request):
     }, status=status.HTTP_200_OK)
 
 
+@extend_schema(request=UserProfileSerializer, responses={201: UserProfileSerializer})
 @api_view(['POST'])
 def register(request):
     """Register a new user."""
@@ -251,6 +261,7 @@ def register(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(request=LoginSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(['POST'])
 def login(request):
     """Login user."""
@@ -280,6 +291,7 @@ def login(request):
         )
 
 
+@extend_schema(responses={200: UserProfileSerializer})
 @api_view(['GET'])
 def get_profile(request, user_id):
     """Get user profile."""
@@ -296,6 +308,7 @@ def get_profile(request, user_id):
         )
 
 
+@extend_schema(request=UserProfileSerializer, responses={200: UserProfileSerializer})
 @api_view(['PUT', 'PATCH'])
 def update_profile(request, user_id):
     """Update user profile."""
@@ -318,6 +331,8 @@ def update_profile(request, user_id):
             status=status.HTTP_404_NOT_FOUND
         )
 
+@extend_schema(methods=['GET'], responses={200: OpenApiTypes.OBJECT})
+@extend_schema(methods=['POST'], request=UserAddressSerializer, responses={201: UserAddressSerializer})
 @api_view(['GET', 'POST'])
 def user_addresses_list_create(request, user_id):
     try:
@@ -358,6 +373,8 @@ def user_addresses_list_create(request, user_id):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(methods=['PUT'], request=UserAddressSerializer, responses={200: UserAddressSerializer})
+@extend_schema(methods=['DELETE'], responses={204: None})
 @api_view(['PUT', 'DELETE'])
 def user_address_detail(request, user_id, address_id):
     try:

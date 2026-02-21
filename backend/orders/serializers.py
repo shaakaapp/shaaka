@@ -2,17 +2,20 @@ from rest_framework import serializers
 from .models import Cart, CartItem, Order, OrderItem
 from products.serializers import ProductSerializer
 from products.models import Product, ProductVariant
+from drf_spectacular.utils import extend_schema_field
 
 class CartItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
     product_id = serializers.IntegerField(write_only=True)
     stock_quantity = serializers.SerializerMethodField()
     variant_label = serializers.SerializerMethodField()
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = CartItem
         fields = ['id', 'product', 'product_id', 'quantity', 'unit_value', 'total_price', 'stock_quantity', 'variant_label']
 
+    @extend_schema_field(serializers.FloatField())
     def get_stock_quantity(self, obj):
         # Check if there is a variant for this unit_value
         variant = ProductVariant.objects.filter(product=obj.product, quantity=obj.unit_value).first()
@@ -20,6 +23,7 @@ class CartItemSerializer(serializers.ModelSerializer):
             return float(variant.stock_quantity)
         return float(obj.product.stock_quantity)
 
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_variant_label(self, obj):
         variant = ProductVariant.objects.filter(product=obj.product, quantity=obj.unit_value).first()
         if variant:

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'products',
     'orders',
     'donations',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -148,5 +149,13 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Shaaka API',
+    'DESCRIPTION': 'Documentation for Shaaka Backend API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 

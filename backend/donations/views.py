@@ -4,7 +4,9 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from users.models import UserProfile
 from .serializers import DonationSerializer
+from drf_spectacular.utils import extend_schema
 
+@extend_schema(request=DonationSerializer, responses={201: DonationSerializer})
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def create_donation(request, user_id):
