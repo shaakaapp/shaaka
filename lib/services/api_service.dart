@@ -216,6 +216,38 @@ class ApiService {
       };
     }
   }
+
+  // Change Password
+  static Future<Map<String, dynamic>> changePassword(
+      int userId, String currentPassword, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/profile/$userId/change-password/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': jsonDecode(response.body),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
   // --- PRODUCT API ---
 
   // Add Product

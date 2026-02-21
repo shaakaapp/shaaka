@@ -331,6 +331,41 @@ def update_profile(request, user_id):
             status=status.HTTP_404_NOT_FOUND
         )
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+@api_view(['POST'])
+def change_password(request, user_id):
+    """Change user password securely."""
+    try:
+        user = UserProfile.objects.get(id=user_id)
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+
+        if not current_password or not new_password:
+            return Response(
+                {'error': 'Both current and new passwords are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not user.check_password(current_password):
+            return Response(
+                {'error': 'Incorrect current password'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response(
+            {'message': 'Password changed successfully'},
+            status=status.HTTP_200_OK
+        )
+
+    except UserProfile.DoesNotExist:
+        return Response(
+            {'error': 'User not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
 @extend_schema(methods=['GET'], responses={200: OpenApiTypes.OBJECT})
 @extend_schema(methods=['POST'], request=UserAddressSerializer, responses={201: UserAddressSerializer})
 @api_view(['GET', 'POST'])
