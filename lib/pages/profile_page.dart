@@ -8,6 +8,7 @@ import '../constants/location_data.dart';
 import '../theme/app_theme.dart';
 import '../services/location_service.dart';
 import 'login_page.dart';
+import '../widgets/shimmer_widgets.dart';
 
 
 class ProfilePage extends StatefulWidget {
@@ -558,11 +559,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _userProfile == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const ProfileShimmer();
     }
 
     if (_userProfile == null) {

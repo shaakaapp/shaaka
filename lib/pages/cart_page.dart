@@ -136,7 +136,7 @@ class _CartPageState extends State<CartPage> {
           ? ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: 4,
-              itemBuilder: (_, __) => const CartItemShimmer(),
+              itemBuilder: (_, i) => CartItemShimmer(index: i),
             )
           : _error != null
               ? Center(
