@@ -83,7 +83,8 @@ WSGI_APPLICATION = 'shaaka_backend.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL', default=f"postgres://{config('DB_USER')}:{config('DB_PASSWORD')}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"),
-        conn_max_age=600
+        conn_max_age=0,
+        conn_health_checks=True,
     )
 }
 
