@@ -1,192 +1,172 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 // ─────────────────────────────────────────────────────────────────
-//  THEME HELPERS
+//  COLOR PALETTE  (high-contrast for maximum shimmer visibility)
 // ─────────────────────────────────────────────────────────────────
 
-Color _base(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2A2A2A)
-        : const Color(0xFFE8E8E8);
+Color _base(BuildContext ctx) =>
+    Theme.of(ctx).brightness == Brightness.dark
+        ? const Color(0xFF252525)
+        : const Color(0xFFE6E6E6);
 
-Color _highlight(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF3D3D3D)
-        : const Color(0xFFF5F5F5);
+Color _highlight(BuildContext ctx) =>
+    Theme.of(ctx).brightness == Brightness.dark
+        ? const Color(0xFF4A4A4A)
+        : const Color(0xFFFFFFFF); // pure white — maximum contrast
 
 // ─────────────────────────────────────────────────────────────────
-//  CORE: Advanced animated shimmer wrapper
+//  CORE: combined sweep + pulse shimmer
 // ─────────────────────────────────────────────────────────────────
 
-/// A custom shimmer that uses a diagonal sweeping gradient for a premium look.
-/// Wraps any child with a shimmer animation that supports custom speed and direction.
-class AdvancedShimmer extends StatefulWidget {
+/// Wraps child in a shimmer sweep AND a subtle breathing pulse.
+/// The sweep produces the classic left-to-right glint.
+/// The pulse keeps the element feeling "alive" between sweeps.
+class _ShimmerPulse extends StatefulWidget {
   final Widget child;
-  final Duration duration;
-
-  const AdvancedShimmer({
-    super.key,
-    required this.child,
-    this.duration = const Duration(milliseconds: 1400),
-  });
+  const _ShimmerPulse({required this.child});
 
   @override
-  State<AdvancedShimmer> createState() => _AdvancedShimmerState();
+  State<_ShimmerPulse> createState() => _ShimmerPulseState();
 }
 
-class _AdvancedShimmerState extends State<AdvancedShimmer>
+class _ShimmerPulseState extends State<_ShimmerPulse>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+  late AnimationController _pulse;
+  late Animation<double> _opacity;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration)
-      ..repeat();
-    _animation = Tween<double>(begin: -1.5, end: 2.5).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.75, end: 1.0).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return ShaderMask(
-          blendMode: BlendMode.srcATop,
-          shaderCallback: (bounds) {
-            return LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                _base(context),
-                _highlight(context),
-                _base(context),
-              ],
-              stops: [
-                (_animation.value - 0.5).clamp(0.0, 1.0),
-                _animation.value.clamp(0.0, 1.0),
-                (_animation.value + 0.5).clamp(0.0, 1.0),
-              ],
-            ).createShader(bounds);
-          },
-          child: child,
-        );
-      },
-      child: widget.child,
+    return Shimmer.fromColors(
+      baseColor: _base(context),
+      highlightColor: _highlight(context),
+      period: const Duration(milliseconds: 1100),
+      direction: ShimmerDirection.ltr,
+      child: FadeTransition(opacity: _opacity, child: widget.child),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  PRIMITIVE BUILDING BLOCKS
+//  STAGGERED ENTRANCE for lists
 // ─────────────────────────────────────────────────────────────────
 
-/// A single shimmer rectangle, used as a building block.
-class ShimmerBox extends StatelessWidget {
-  final double? width;
-  final double height;
-  final BorderRadius borderRadius;
-
-  const ShimmerBox({
-    super.key,
-    this.width,
-    required this.height,
-    this.borderRadius = const BorderRadius.all(Radius.circular(8)),
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: _base(context),
-        borderRadius: borderRadius,
-      ),
-    );
-  }
-}
-
-/// A circular shimmer for avatars.
-class ShimmerCircle extends StatelessWidget {
-  final double size;
-  const ShimmerCircle({super.key, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: _base(context),
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────
-//  STAGGERED LIST ITEM — fades + slides in with a delay offset
-// ─────────────────────────────────────────────────────────────────
-
-class _StaggeredItem extends StatefulWidget {
+class _Stagger extends StatefulWidget {
   final int index;
   final Widget child;
-  const _StaggeredItem({required this.index, required this.child});
+  const _Stagger({required this.index, required this.child});
 
   @override
-  State<_StaggeredItem> createState() => _StaggeredItemState();
+  State<_Stagger> createState() => _StaggerState();
 }
 
-class _StaggeredItemState extends State<_StaggeredItem>
+class _StaggerState extends State<_Stagger>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late AnimationController _c;
   late Animation<double> _fade;
   late Animation<Offset> _slide;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-    final delayed = CurvedAnimation(
-      parent: _controller,
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 450))
+      ..forward();
+    final curve = CurvedAnimation(
+      parent: _c,
       curve: Interval(
-        (widget.index * 0.1).clamp(0.0, 0.6),
-        1.0,
-        curve: Curves.easeOut,
-      ),
+          (widget.index * 0.08).clamp(0.0, 0.5), 1.0,
+          curve: Curves.easeOut),
     );
-    _fade = Tween<double>(begin: 0, end: 1).animate(delayed);
-    _slide = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero)
-        .animate(delayed);
-    _controller.forward();
+    _fade = Tween<double>(begin: 0, end: 1).animate(curve);
+    _slide =
+        Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
+            .animate(curve);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _c.dispose();
     super.dispose();
   }
 
   @override
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: _fade,
+        child: SlideTransition(position: _slide, child: widget.child),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  PRIMITIVE BLOCK  (rounded rectangle placeholder)
+// ─────────────────────────────────────────────────────────────────
+
+class _Block extends StatelessWidget {
+  final double? width;
+  final double height;
+  final double radius;
+
+  const _Block({this.width, required this.height, this.radius = 6});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: _base(context),
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  "TEXT LINE" GROUPS  (title + body lines at varying widths)
+// ─────────────────────────────────────────────────────────────────
+
+class _TextLines extends StatelessWidget {
+  final List<double> widths; // fractions of available width, 0‥1
+  final double lineHeight;
+  final double spacing;
+
+  const _TextLines({
+    required this.widths,
+    this.lineHeight = 12.0,
+    this.spacing = 6.0,
+  });
+
+  @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fade,
-      child: SlideTransition(position: _slide, child: widget.child),
-    );
+    return LayoutBuilder(builder: (ctx, constraints) {
+      final maxW = constraints.maxWidth;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int i = 0; i < widths.length; i++) ...[
+            if (i > 0) SizedBox(height: spacing),
+            _Block(width: maxW * widths[i], height: lineHeight, radius: 5),
+          ],
+        ],
+      );
+    });
   }
 }
 
@@ -199,16 +179,14 @@ class ProductCardShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: _base(context),
-      highlightColor: _highlight(context),
+    return _ShimmerPulse(
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -216,22 +194,55 @@ class ProductCardShimmer extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(6),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Image area with subtle inner gradient tint
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
                   color: _base(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          _base(context),
+                          _base(context).withValues(alpha: 0.7),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),
-            ShimmerBox(height: 11, width: double.infinity),
+            // Product name (2 lines, second shorter)
+            _Block(width: double.infinity, height: 11, radius: 5),
             const SizedBox(height: 4),
-            ShimmerBox(height: 11, width: 70),
+            _Block(width: 80, height: 11, radius: 5),
             const SizedBox(height: 6),
+            // Price + add button row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _Block(width: 60, height: 14, radius: 5),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: _base(context),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
           ],
         ),
       ),
@@ -240,7 +251,7 @@ class ProductCardShimmer extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  PRODUCT GRID SHIMMER (Sliver)
+//  PRODUCT GRID SHIMMER (sliver)
 // ─────────────────────────────────────────────────────────────────
 
 class ProductGridShimmer extends StatelessWidget {
@@ -259,7 +270,7 @@ class ProductGridShimmer extends StatelessWidget {
           mainAxisSpacing: 12,
         ),
         delegate: SliverChildBuilderDelegate(
-          (context, index) => const ProductCardShimmer(),
+          (_, i) => _Stagger(index: i, child: const ProductCardShimmer()),
           childCount: itemCount,
         ),
       ),
@@ -268,7 +279,7 @@ class ProductGridShimmer extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  STORE SHIMMER (Banner + Categories + Grid)
+//  STORE SHIMMER  (search bar + banner + categories + grid)
 // ─────────────────────────────────────────────────────────────────
 
 class StoreShimmer extends StatelessWidget {
@@ -276,38 +287,58 @@ class StoreShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AdvancedShimmer(
-      child: CustomScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        slivers: [
-          // Banner
-          SliverToBoxAdapter(
+    return CustomScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      slivers: [
+        // Search bar
+        SliverToBoxAdapter(
+          child: _ShimmerPulse(
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              height: 50,
+              decoration: BoxDecoration(
+                color: _base(context),
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+          ),
+        ),
+        // Full-width banner
+        SliverToBoxAdapter(
+          child: _ShimmerPulse(
             child: Container(
               height: 220,
-              margin: const EdgeInsets.only(bottom: 24),
               color: _base(context),
+              margin: const EdgeInsets.only(bottom: 24),
             ),
           ),
-          // Section label
-          SliverToBoxAdapter(
+        ),
+        // Section title
+        SliverToBoxAdapter(
+          child: _ShimmerPulse(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: ShimmerBox(height: 18, width: 160),
+              child: _Block(width: 160, height: 18, radius: 6),
             ),
           ),
-          // Category chips row
-          SliverToBoxAdapter(
+        ),
+        // Category tiles (4 columns)
+        SliverToBoxAdapter(
+          child: _ShimmerPulse(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: List.generate(4, (i) {
                   return Expanded(
-                    child: Container(
-                      height: 90,
-                      margin: EdgeInsets.only(right: i < 3 ? 10 : 0),
-                      decoration: BoxDecoration(
-                        color: _base(context),
-                        borderRadius: BorderRadius.circular(16),
+                    child: _Stagger(
+                      index: i,
+                      child: Container(
+                        height: 90,
+                        margin: EdgeInsets.only(right: i < 3 ? 10 : 0),
+                        decoration: BoxDecoration(
+                          color: _base(context),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                     ),
                   );
@@ -315,17 +346,26 @@ class StoreShimmer extends StatelessWidget {
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
-          // Product grid
-          const ProductGridShimmer(itemCount: 6),
-        ],
-      ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        // Section title 2
+        SliverToBoxAdapter(
+          child: _ShimmerPulse(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: _Block(width: 130, height: 18, radius: 6),
+            ),
+          ),
+        ),
+        // Product grid
+        const ProductGridShimmer(itemCount: 6),
+      ],
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  ORDER LIST SHIMMER (staggered)
+//  ORDER LIST SHIMMER
 // ─────────────────────────────────────────────────────────────────
 
 class OrderListShimmer extends StatelessWidget {
@@ -336,43 +376,64 @@ class OrderListShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
       itemCount: itemCount,
-      itemBuilder: (context, index) => _StaggeredItem(
+      itemBuilder: (context, index) => _Stagger(
         index: index,
-        child: Shimmer.fromColors(
-          baseColor: _base(context),
-          highlightColor: _highlight(context),
+        child: _ShimmerPulse(
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _base(context)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 6,
+                ),
+              ],
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Product thumbnail
                 Container(
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
                     color: _base(context),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ShimmerBox(height: 14, width: double.infinity),
-                      const SizedBox(height: 8),
-                      ShimmerBox(height: 12, width: 140),
+                      _Block(width: double.infinity, height: 14, radius: 5),
                       const SizedBox(height: 6),
-                      ShimmerBox(height: 12, width: 80),
+                      _Block(width: 160, height: 12, radius: 5),
+                      const SizedBox(height: 10),
+                      // Status badge placeholder
+                      Container(
+                        height: 24,
+                        width: 90,
+                        decoration: BoxDecoration(
+                          color: _base(context),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ],
+                  ),
+                ),
+                // Arrow icon placeholder
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: _base(context),
+                    shape: BoxShape.circle,
                   ),
                 ),
               ],
@@ -385,7 +446,7 @@ class OrderListShimmer extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  CART ITEM SHIMMER (staggered)
+//  CART ITEM SHIMMER
 // ─────────────────────────────────────────────────────────────────
 
 class CartItemShimmer extends StatelessWidget {
@@ -394,39 +455,78 @@ class CartItemShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _StaggeredItem(
+    return _Stagger(
       index: index,
-      child: Shimmer.fromColors(
-        baseColor: _base(context),
-        highlightColor: _highlight(context),
+      child: _ShimmerPulse(
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+              ),
+            ],
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Image
               Container(
-                width: 70,
-                height: 70,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
                   color: _base(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ShimmerBox(height: 14, width: double.infinity),
-                    const SizedBox(height: 8),
-                    ShimmerBox(height: 12, width: 80),
-                    const SizedBox(height: 12),
-                    ShimmerBox(height: 32, width: 120, borderRadius: BorderRadius.circular(8)),
+                    _Block(width: double.infinity, height: 14, radius: 5),
+                    const SizedBox(height: 6),
+                    _Block(width: 90, height: 12, radius: 5),
+                    const SizedBox(height: 14),
+                    // Quantity stepper placeholder
+                    Row(
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: _base(context),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _Block(width: 24, height: 16, radius: 4),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: _base(context),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
+                ),
+              ),
+              // Delete icon placeholder
+              const SizedBox(width: 8),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _base(context),
+                  shape: BoxShape.circle,
                 ),
               ),
             ],
@@ -447,9 +547,7 @@ class WishlistShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.all(16.0),
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
+      padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.72,
@@ -457,16 +555,13 @@ class WishlistShimmer extends StatelessWidget {
         mainAxisSpacing: 16,
       ),
       itemCount: 6,
-      itemBuilder: (context, index) => _StaggeredItem(
-        index: index,
-        child: const ProductCardShimmer(),
-      ),
+      itemBuilder: (_, i) => _Stagger(index: i, child: const ProductCardShimmer()),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  PROFILE SHIMMER  ← pixel-perfect mirror of ProfilePage layout
+//  PROFILE SHIMMER  (full page)
 // ─────────────────────────────────────────────────────────────────
 
 class ProfileShimmer extends StatelessWidget {
@@ -475,19 +570,17 @@ class ProfileShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        elevation: 0,
-      ),
-      body: AdvancedShimmer(
-        child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Avatar ──────────────────────────────
-              Center(
+      appBar: AppBar(title: const Text('Profile'), elevation: 0),
+      body: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+
+            // ── Avatar ──────────────────────────────────
+            _ShimmerPulse(
+              child: Center(
                 child: Stack(
                   children: [
                     Container(
@@ -496,135 +589,199 @@ class ProfileShimmer extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: _base(context),
                         shape: BoxShape.circle,
-                        border: Border.all(color: _highlight(context), width: 3),
                       ),
                     ),
                     Positioned(
-                      bottom: 0,
-                      right: 0,
+                      bottom: 2,
+                      right: 2,
                       child: Container(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
                           color: _base(context),
                           shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              width: 2),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 8),
 
-              // ── Personal Info Card ───────────────────
-              _shimmerCard(
-                context,
+            // Name + role tag under avatar
+            _ShimmerPulse(
+              child: Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _fieldShimmer(context),
-                    const SizedBox(height: 16),
-                    _fieldShimmer(context),
-                    const SizedBox(height: 16),
-                    _fieldShimmer(context),
-                    const SizedBox(height: 16),
-                    ShimmerBox(height: 14, width: 180),
+                    _Block(width: 140, height: 14, radius: 6),
+                    const SizedBox(height: 6),
+                    _Block(width: 80, height: 11, radius: 12),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 24),
 
-              // ── Address Card ─────────────────────────
-              _shimmerCard(
-                context,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Section header row
-                    Row(
-                      children: [
-                        ShimmerBox(height: 18, width: 180),
-                        const Spacer(),
-                        ShimmerBox(height: 18, width: 80),
-                      ],
+            // ── Personal info card ───────────────────────
+            _shimmerCard(
+              context,
+              header: 'Personal Information',
+              child: Column(
+                children: [
+                  _fieldRow(context, icon: true),
+                  const SizedBox(height: 14),
+                  _fieldRow(context, icon: true),
+                  const SizedBox(height: 14),
+                  _fieldRow(context, icon: true),
+                  const SizedBox(height: 14),
+                  // Category badge
+                  Row(children: [
+                    _Block(width: 80, height: 12, radius: 5),
+                    const SizedBox(width: 8),
+                    Container(
+                      height: 22,
+                      width: 70,
+                      decoration: BoxDecoration(
+                        color: _base(context),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    _fieldShimmer(context),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(child: _fieldShimmer(context)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _fieldShimmer(context)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _fieldShimmer(context),
-                    const SizedBox(height: 16),
-                    _fieldShimmer(context),
-                    const SizedBox(height: 16),
-                    _fieldShimmer(context),
-                  ],
-                ),
+                  ]),
+                ],
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 16),
 
-              // ── Action Buttons Row ───────────────────
-              Row(
+            // ── Address card ─────────────────────────────
+            _shimmerCard(
+              context,
+              header: 'Address',
+              child: Column(
+                children: [
+                  _fieldRow(context, icon: false, fullWidth: true),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(child: _fieldRow(context, icon: false, fullWidth: true)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _fieldRow(context, icon: false, fullWidth: true)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _fieldRow(context, icon: false, fullWidth: true),
+                  const SizedBox(height: 14),
+                  _fieldRow(context, icon: false, fullWidth: true),
+                  const SizedBox(height: 14),
+                  _Block(width: double.infinity, height: 44, radius: 10),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Action row ───────────────────────────────
+            _ShimmerPulse(
+              child: Row(
                 children: [
                   Expanded(
-                    child: ShimmerBox(
+                    child: Container(
                       height: 48,
-                      borderRadius: BorderRadius.circular(12),
+                      decoration: BoxDecoration(
+                        color: _base(context),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ShimmerBox(
+                    child: Container(
                       height: 48,
-                      borderRadius: BorderRadius.circular(12),
+                      decoration: BoxDecoration(
+                        color: _base(context),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _shimmerCard(BuildContext context, {required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  Widget _shimmerCard(BuildContext ctx,
+      {required String header, required Widget child}) {
+    return _ShimmerPulse(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Block(
+                width: header.length * 7.5,
+                height: 15,
+                radius: 6),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            child,
+          ],
+        ),
       ),
-      child: child,
     );
   }
 
-  /// Mimics a TextFormField with label + border.
-  Widget _fieldShimmer(BuildContext context) {
+  Widget _fieldRow(BuildContext ctx,
+      {required bool icon, bool fullWidth = false}) {
     return Container(
-      height: 56,
+      height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: _base(context),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _highlight(context), width: 1),
+        color: _base(ctx),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Theme.of(ctx).brightness == Brightness.dark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.06),
+        ),
       ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: ShimmerBox(height: 12, width: 120),
+      child: Row(
+        children: [
+          if (icon) ...[
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                color: Theme.of(ctx).brightness == Brightness.dark
+                    ? const Color(0xFF3A3A3A)
+                    : const Color(0xFFD0D0D0),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          _Block(
+            width: fullWidth ? null : math.Random().nextDouble() * 60 + 80,
+            height: 11,
+            radius: 4,
+          ),
+        ],
       ),
     );
   }
