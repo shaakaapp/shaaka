@@ -1023,4 +1023,87 @@ class ApiService {
     }
   }
 
+  // --- WISHLIST API ---
+
+  static Future<Map<String, dynamic>> getWishlist(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/wishlist/$userId/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final products = data.map((json) => Product.fromJson(json)).toList();
+        return {
+          'success': true,
+          'data': products,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> toggleWishlist(int userId, int productId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/wishlist/toggle/$userId/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'product_id': productId}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': jsonDecode(response.body),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkWishlist(int userId, int productId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/wishlist/check/$userId/$productId/'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': jsonDecode(response.body),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
 }

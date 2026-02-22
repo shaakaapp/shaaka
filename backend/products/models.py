@@ -118,3 +118,15 @@ class AutoScrollImage(models.Model):
 
     def __str__(self):
         return self.title or f"Banner {self.id}"
+
+class WishlistItem(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='wishlist')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='wishlisted_by')
+    added_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'wishlist_items'
+        unique_together = ('user', 'product')
+
+    def __str__(self):
+        return f"{self.user.full_name} - {self.product.name}"

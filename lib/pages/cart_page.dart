@@ -4,6 +4,7 @@ import '../services/storage_service.dart';
 import '../models/cart_order_models.dart';
 import '../theme/app_theme.dart';
 import 'checkout_page.dart';
+import 'wishlist_page.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -118,6 +119,17 @@ class _CartPageState extends State<CartPage> {
       appBar: AppBar(
         title: const Text('My Cart'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const WishlistPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? Center(

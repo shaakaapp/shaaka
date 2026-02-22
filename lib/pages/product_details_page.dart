@@ -40,6 +40,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
   double _currentPrice = 0.0;
   double _currentStock = 0.0;
 
+  bool _isWishlisted = false;
+
   @override
   void initState() {
     super.initState();
@@ -119,8 +121,48 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
   Future<void> _initialize() async {
     _currentUserId = await StorageService.getUserId();
     _checkCart();
+    _checkWishlist();
     _loadSimilarProducts();
     _loadReviews();
+  }
+
+  Future<void> _checkWishlist() async {
+    if (_currentUserId == null) return;
+    
+    final result = await ApiService.checkWishlist(_currentUserId!, _product.id);
+    if (mounted && result['success'] == true) {
+      setState(() {
+        _isWishlisted = result['data']['is_wishlisted'] ?? false;
+      });
+    }
+  }
+
+  Future<void> _toggleWishlist() async {
+    final userId = await StorageService.getUserId();
+    if (userId == null) {
+      if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to modify wishlist')));
+      return;
+    }
+
+    // Optimistically update UI
+    setState(() {
+      _isWishlisted = !_isWishlisted;
+    });
+
+    final result = await ApiService.toggleWishlist(userId, _product.id);
+    if (mounted) {
+      if (result['success'] == true) {
+        String msg = result['data']['status'] == 'added' ? 'Added to Wishlist' : 'Removed from Wishlist';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), duration: const Duration(seconds: 1)));
+      } else {
+        // Revert optimistically updated state on failure
+        setState(() {
+          _isWishlisted = !_isWishlisted;
+        });
+        _showError(result['error']);
+      }
+    }
   }
 
   Future<void> _loadSimilarProducts() async {
@@ -613,6 +655,27 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
                         ),
                       ),
                     ),
+                  // Wishlist Icon (Heart) placed in the top right, safely below AppBar
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 8,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                           BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          _isWishlisted ? Icons.favorite : Icons.favorite_border,
+                          color: _isWishlisted ? Colors.red : Colors.grey[600],
+                        ),
+                        onPressed: _toggleWishlist,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

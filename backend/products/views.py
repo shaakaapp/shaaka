@@ -2,7 +2,7 @@ from rest_framework import generics, status, permissions, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from .models import Product, ProductImage, ProductReview, AutoScrollImage
+from .models import Product, ProductImage, ProductReview, AutoScrollImage, WishlistItem
 from .serializers import ProductSerializer, ProductReviewSerializer, AutoScrollImageSerializer
 from users.models import UserProfile
 
@@ -214,3 +214,37 @@ class AutoScrollImageListView(generics.ListAPIView):
 
     def get_queryset(self):
         return AutoScrollImage.objects.filter(is_active=True).order_by('order')
+
+
+# Wishlist Views
+class WishlistToggleView(APIView):
+    def post(self, request, user_id):
+        product_id = request.data.get('product_id')
+        if not product_id:
+             return Response({'error': 'product_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+             user = UserProfile.objects.get(id=user_id)
+             product = Product.objects.get(id=product_id)
+        except (UserProfile.DoesNotExist, Product.DoesNotExist):
+             return Response({'error': 'User or Product not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        wishlist_item, created = WishlistItem.objects.get_or_create(user=user, product=product)
+        if created:
+             return Response({'message': 'Added to wishlist', 'status': 'added'}, status=status.HTTP_201_CREATED)
+        else:
+             wishlist_item.delete()
+             return Response({'message': 'Removed from wishlist', 'status': 'removed'}, status=status.HTTP_200_OK)
+
+class WishlistCheckView(APIView):
+    def get(self, request, user_id, product_id):
+         exists = WishlistItem.objects.filter(user_id=user_id, product_id=product_id).exists()
+         return Response({'is_wishlisted': exists})
+
+class WishlistListView(generics.ListAPIView):
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+         user_id = self.kwargs['user_id']
+         # Get all products that this user has wishlisted
+         return Product.objects.filter(wishlisted_by__user_id=user_id).order_by('-wishlisted_by__added_at')
