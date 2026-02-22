@@ -127,9 +127,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
   }
 
   Future<void> _checkWishlist() async {
-    if (_currentUserId == null) return;
-    
+    if (_currentUserId == null) {
+      print('[Wishlist] _checkWishlist skipped: userId is null');
+      return;
+    }
+    print('[Wishlist] Checking wishlist for user=$_currentUserId, product=${_product.id}');
     final result = await ApiService.checkWishlist(_currentUserId!, _product.id);
+    print('[Wishlist] checkWishlist result: $result');
     if (mounted && result['success'] == true) {
       setState(() {
         _isWishlisted = result['data']['is_wishlisted'] ?? false;
@@ -139,9 +143,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
 
   Future<void> _toggleWishlist() async {
     final userId = await StorageService.getUserId();
+    print('[Wishlist] _toggleWishlist called. userId=$userId, productId=${_product.id}');
     if (userId == null) {
       if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to modify wishlist')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to modify wishlist')));
       return;
     }
 
@@ -151,6 +156,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
     });
 
     final result = await ApiService.toggleWishlist(userId, _product.id);
+    print('[Wishlist] toggleWishlist result: $result');
     if (mounted) {
       if (result['success'] == true) {
         String msg = result['data']['status'] == 'added' ? 'Added to Wishlist' : 'Removed from Wishlist';
@@ -580,6 +586,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
         // Actually, often detail pages have transparent app bar over image.
         // But the previous code had warmWhite. I'll stick to removing the title content first.
         elevation: 0,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.85),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(
+                _isWishlisted ? Icons.favorite : Icons.favorite_border,
+                color: _isWishlisted ? Colors.red : Colors.grey[700],
+              ),
+              onPressed: _toggleWishlist,
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -655,27 +677,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
                         ),
                       ),
                     ),
-                  // Wishlist Icon (Heart) placed in the top right, safely below AppBar
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    right: 8,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                           BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          _isWishlisted ? Icons.favorite : Icons.favorite_border,
-                          color: _isWishlisted ? Colors.red : Colors.grey[600],
-                        ),
-                        onPressed: _toggleWishlist,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
