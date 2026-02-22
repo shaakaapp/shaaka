@@ -442,7 +442,7 @@ class _DonationsPageState extends State<DonationsPage> {
                 onPressed: _isLoading ? null : _submitDonation,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.pink,
+                  backgroundColor: const Color(0xFF5A8A5A),
                   foregroundColor: Colors.white,
                 ),
                 child: _isLoading 
