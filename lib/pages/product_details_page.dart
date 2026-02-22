@@ -7,6 +7,7 @@ import '../services/storage_service.dart';
 import '../widgets/product_card.dart';
 import '../theme/app_theme.dart';
 import 'checkout_page.dart';
+import '../utils/responsive.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final Product product;
@@ -625,10 +626,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: Responsive.centeredWebContainer(
+        context,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Product Image Gallery
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.45,

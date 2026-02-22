@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/product_card.dart';
 import 'product_details_page.dart';
+import '../utils/responsive.dart';
 
 class CategoryProductsPage extends StatelessWidget {
   final String category;
@@ -22,10 +23,12 @@ class CategoryProductsPage extends StatelessWidget {
       ),
       body: products.isEmpty
           ? const Center(child: Text('No products found'))
-          : GridView.builder(
+          : Responsive.centeredWebContainer(
+              context,
+              child: GridView.builder(
               padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: Responsive.getGridCrossAxisCount(context, mobile: 2, tablet: 4, desktop: 5),
                 childAspectRatio: 0.75, // Increased from 0.7 for tighter spacing
                 crossAxisSpacing: 12, // Reduced spacing
                 mainAxisSpacing: 12,
@@ -44,6 +47,7 @@ class CategoryProductsPage extends StatelessWidget {
                 );
               },
             ),
+          ),
     );
   }
 }

@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import 'checkout_page.dart';
 import 'wishlist_page.dart';
 import '../widgets/shimmer_widgets.dart';
+import '../utils/responsive.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -132,15 +133,17 @@ class _CartPageState extends State<CartPage> {
           ),
         ],
       ),
-      body: _isLoading
-          ? ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: 4,
-              itemBuilder: (_, i) => CartItemShimmer(index: i),
-            )
-          : _error != null
-              ? Center(
-                  child: Padding(
+      body: Responsive.centeredWebContainer(
+        context,
+        child: _isLoading
+            ? ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: 4,
+                itemBuilder: (_, i) => CartItemShimmer(index: i),
+              )
+            : _error != null
+                ? Center(
+                    child: Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

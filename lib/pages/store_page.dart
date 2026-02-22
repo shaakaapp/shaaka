@@ -13,6 +13,7 @@ import 'category_products_page.dart';
 import '../models/auto_scroll_image.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import '../utils/responsive.dart';
 
 class StorePage extends StatefulWidget {
   final bool isVendorView;
@@ -473,11 +474,13 @@ class _StorePageState extends State<StorePage> {
 
         // Scrollable Content
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadData,
-            child: CustomScrollView(
-              slivers: [
-                // Carousel (Show only if not vendor mode AND not searching)
+          child: Responsive.centeredWebContainer(
+            context,
+            child: RefreshIndicator(
+              onRefresh: _loadData,
+              child: CustomScrollView(
+                slivers: [
+                  // Carousel (Show only if not vendor mode AND not searching)
                 if (!widget.isVendorView && _searchController.text.isEmpty && _topBanners.isNotEmpty)
                   SliverToBoxAdapter(
                     child: Column(
@@ -556,8 +559,8 @@ class _StorePageState extends State<StorePage> {
                    SliverPadding(
                       padding: const EdgeInsets.all(12),
                       sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: Responsive.getGridCrossAxisCount(context, mobile: 2, tablet: 3, desktop: 5),
                           childAspectRatio: 0.68,
                           crossAxisSpacing: 8,
                           mainAxisSpacing: 12,
@@ -595,8 +598,8 @@ class _StorePageState extends State<StorePage> {
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                     sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4, // 4 columns as requested
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: Responsive.getGridCrossAxisCount(context, mobile: 4, tablet: 6, desktop: 8), 
                         childAspectRatio: 0.7, // Adjusted for narrower items
                         crossAxisSpacing: 10, // Slightly reduced spacing
                         mainAxisSpacing: 16,
@@ -783,6 +786,7 @@ class _StorePageState extends State<StorePage> {
                   const SliverToBoxAdapter(child: SizedBox(height: 80)),
               ],
             ),
+          ),
           ),
         ),
       ],
