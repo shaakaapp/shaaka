@@ -200,33 +200,93 @@ class _RegisterPageState extends State<RegisterPage> {
   void _showImageSourceActionSheet() {
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        return SafeArea(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from Gallery'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.gallery);
-                },
+            children: [
+              // Handle bar
+              Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Take a Photo'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.camera);
-                },
+              const Text(
+                'Add Profile Photo',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // ── Camera ──
+                  _imageSourceCard(
+                    ctx,
+                    icon: Icons.camera_alt_rounded,
+                    label: 'Camera',
+                    color: Colors.teal,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickImage(ImageSource.camera);
+                    },
+                  ),
+                  // ── Gallery ──
+                  _imageSourceCard(
+                    ctx,
+                    icon: Icons.photo_library_rounded,
+                    label: 'Gallery',
+                    color: Colors.blue,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickImage(ImageSource.gallery);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
+
+  Widget _imageSourceCard(
+    BuildContext ctx, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 130,
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 36, color: color),
+            const SizedBox(height: 8),
+            Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: color)),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Future<void> _pickImage(ImageSource source) async {
     try {
