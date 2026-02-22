@@ -358,16 +358,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Checkbox Default
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Make this my default address'),
-                      value: _isDefault,
-                      onChanged: (v) => setState(() => _isDefault = v!),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    ),
-                    
-                    const SizedBox(height: 16),
+
                     
                     // Delivery Instructions
                     ExpansionTile(
