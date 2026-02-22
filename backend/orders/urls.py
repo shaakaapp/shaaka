@@ -11,6 +11,7 @@ urlpatterns = [
     
     # Order URLs
     path('orders/<int:user_id>/place/', views.place_order, name='place_order'),
+    path('orders/<int:user_id>/place_direct/', views.place_direct_order, name='place_direct_order'),
     path('orders/<int:user_id>/list/', views.get_orders, name='get_orders'),
     path('orders/detail/<int:order_id>/', views.get_order_details, name='get_order_details'),
     path('orders/<int:user_id>/cancel/<int:order_id>/', views.cancel_order, name='cancel_order'),

@@ -39,9 +39,11 @@ class _SearchPageState extends State<SearchPage> {
       bool available = await _speech.initialize(
         onStatus: (val) {
           if (val == 'done' || val == 'notListening') {
-            setState(() => _isListening = false);
-            if (_searchController.text.isNotEmpty) {
-               _performSearch(_searchController.text);
+            if (_isListening) {
+              setState(() => _isListening = false);
+              if (_searchController.text.isNotEmpty) {
+                 _performSearch(_searchController.text);
+              }
             }
           }
         },
@@ -50,14 +52,24 @@ class _SearchPageState extends State<SearchPage> {
       if (available) {
         setState(() => _isListening = true);
         _speech.listen(
-          onResult: (val) => setState(() {
-            _searchController.text = val.recognizedWords;
-          }),
+          pauseFor: const Duration(seconds: 2),
+          onResult: (val) {
+            setState(() {
+              _searchController.text = val.recognizedWords;
+            });
+            if (val.finalResult && _searchController.text.isNotEmpty) {
+              setState(() => _isListening = false);
+              _performSearch(_searchController.text);
+            }
+          },
         );
       }
     } else {
       setState(() => _isListening = false);
       _speech.stop();
+      if (_searchController.text.isNotEmpty) {
+        _performSearch(_searchController.text);
+      }
     }
   }
 

@@ -10,6 +10,7 @@ import 'product_details_page.dart';
 import 'add_product_page.dart';
 import 'search_page.dart';
 import 'category_products_page.dart';
+import '../models/auto_scroll_image.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class StorePage extends StatefulWidget {
@@ -43,8 +44,10 @@ class _StorePageState extends State<StorePage> {
       bool available = await _speech.initialize(
         onStatus: (val) {
           if (val == 'done' || val == 'notListening') {
-            setState(() => _isListening = false);
-            _filterProducts(_searchController.text);
+            if (_isListening) {
+              setState(() => _isListening = false);
+              _filterProducts(_searchController.text);
+            }
           }
         },
         onError: (val) => print('onError: $val'),
@@ -52,15 +55,22 @@ class _StorePageState extends State<StorePage> {
       if (available) {
         setState(() => _isListening = true);
         _speech.listen(
-          onResult: (val) => setState(() {
-            _searchController.text = val.recognizedWords;
-            _filterProducts(val.recognizedWords);
-          }),
+          pauseFor: const Duration(seconds: 2),
+          onResult: (val) {
+            setState(() {
+              _searchController.text = val.recognizedWords;
+              _filterProducts(val.recognizedWords);
+            });
+            if (val.finalResult) {
+              setState(() => _isListening = false);
+            }
+          },
         );
       }
     } else {
       setState(() => _isListening = false);
       _speech.stop();
+      _filterProducts(_searchController.text);
     }
   }
 

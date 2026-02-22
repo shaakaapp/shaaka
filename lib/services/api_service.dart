@@ -717,6 +717,33 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> placeDirectOrder(int userId, Map<String, dynamic> orderData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders/$userId/place_direct/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(orderData),
+      );
+
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': Order.fromJson(jsonDecode(response.body)),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': jsonDecode(response.body),
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
   static Future<Map<String, dynamic>> getOrders(int userId) async {
     try {
       final response = await http.get(

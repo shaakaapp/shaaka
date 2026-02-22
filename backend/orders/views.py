@@ -265,6 +265,102 @@ def place_order(request, user_id):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(
+    request=inline_serializer(
+        name='PlaceDirectOrderRequest',
+        fields={
+            'shipping_address': serializers.CharField(required=False),
+            'city': serializers.CharField(required=False),
+            'state': serializers.CharField(required=False),
+            'pincode': serializers.CharField(required=False),
+            'payment_method': serializers.CharField(default='COD'),
+            'product_id': serializers.IntegerField(),
+            'quantity': serializers.FloatField(default=1.0),
+            'unit_value': serializers.FloatField(default=1.0)
+        }
+    ),
+    responses={201: OrderSerializer}
+)
+@api_view(['POST'])
+@transaction.atomic
+def place_direct_order(request, user_id):
+    try:
+        user = UserProfile.objects.get(id=user_id)
+        
+        # Prepare Order Data
+        shipping_address = request.data.get('shipping_address') or user.address_line
+        city = request.data.get('city') or user.city
+        state = request.data.get('state') or user.state
+        pincode = request.data.get('pincode') or user.pincode
+        payment_method = request.data.get('payment_method', 'COD')
+        
+        product_id = request.data.get('product_id')
+        quantity = float(request.data.get('quantity', 1.0))
+        unit_value = float(request.data.get('unit_value', 1.0))
+
+        if not shipping_address:
+             return Response({'error': 'Shipping address required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        product = get_object_or_404(Product, id=product_id)
+        
+        # Verify user is not buying their own product
+        if product.vendor == user:
+            return Response({'error': 'You cannot checkout your own product'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        variant = ProductVariant.objects.filter(product=product, quantity=unit_value).first()
+        
+        price_at_purchase = product.price
+        total_amount = product.price * quantity * unit_value
+        product_name = product.name
+        
+        if variant:
+            deduction_quantity = quantity # Count
+            if deduction_quantity > float(variant.stock_quantity):
+                return Response({'error': f"Not enough stock for {product.name} ({variant.quantity} {variant.unit})"}, status=status.HTTP_400_BAD_REQUEST)
+            price_at_purchase = variant.price
+            total_amount = variant.price * quantity
+            product_name = f"{product.name} ({variant.quantity} {variant.unit})"
+            
+            variant.stock_quantity = float(variant.stock_quantity) - deduction_quantity
+            variant.save()
+            product.stock_quantity = float(product.stock_quantity) - deduction_quantity
+            product.save()
+        else:
+            deduction_quantity = quantity * unit_value
+            if deduction_quantity > float(product.stock_quantity):
+                return Response({'error': f"Not enough stock for {product.name}"}, status=status.HTTP_400_BAD_REQUEST)
+            price_at_purchase = product.price
+            total_amount = product.price * deduction_quantity
+            
+            product.stock_quantity = float(product.stock_quantity) - deduction_quantity
+            product.save()
+
+        # Create Order
+        order = Order.objects.create(
+            user=user,
+            shipping_address=shipping_address,
+            city=city,
+            state=state,
+            pincode=pincode,
+            total_amount=total_amount,
+            payment_method=payment_method
+        )
+
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            product_name=product_name,
+            quantity=deduction_quantity if not variant else quantity, 
+            price_at_purchase=price_at_purchase
+        )
+        
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+        
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 @extend_schema(responses={200: OrderSerializer(many=True)})
 @api_view(['GET'])
 def get_orders(request, user_id):

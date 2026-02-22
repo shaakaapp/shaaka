@@ -5,7 +5,7 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/product_card.dart';
 import '../theme/app_theme.dart';
-import 'store_page.dart';
+import 'checkout_page.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final Product product;
@@ -204,6 +204,38 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to Cart!'), backgroundColor: Colors.green));
       }
     }
+  }
+
+  Future<void> _buyNow() async {
+    final userId = await StorageService.getUserId();
+    if (userId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to buy items')));
+      return;
+    }
+
+    if (_currentStock <= 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Item is out of stock.'), 
+          backgroundColor: Colors.red
+      ));
+      return;
+    }
+
+    final directOrderData = {
+      'product_id': _product.id,
+      'quantity': 1.0,
+      'unit_value': _quantityStep,
+    };
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutPage(directOrderData: directOrderData)
+      )
+    );
   }
 
   Future<void> _showAddReviewDialog() async {
@@ -991,21 +1023,49 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
                     child: const Text('Your Product'),
                   ),
                 )
-              : _cartItem != null
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('In Cart: ${_cartItem!.quantity}'),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Continue Shopping'),
+              : Row(
+                  children: [
+                    if (_cartItem == null)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _product.stockQuantity <= 0 ? null : _addToCart,
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                                color: _product.stockQuantity <= 0 
+                                    ? Colors.grey 
+                                    : Theme.of(context).colorScheme.primary),
+                            foregroundColor: Theme.of(context).colorScheme.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text(_product.stockQuantity <= 0 ? 'Out of Stock' : 'Add to Cart'),
                         ),
-                      ],
-                    )
-                  : ElevatedButton(
-                      onPressed: _product.stockQuantity <= 0 ? null : _addToCart,
-                      child: Text(_product.stockQuantity <= 0 ? 'Out of Stock' : 'Add to Cart'),
+                      )
+                    else 
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                            foregroundColor: Theme.of(context).colorScheme.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text('In Cart: ${_cartItem!.quantity}'),
+                        ),
+                      ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _product.stockQuantity <= 0 ? null : _buyNow,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accentTerracotta,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text('Buy Now'),
+                      ),
                     ),
+                  ],
+                ),
         ),
       ),
     );

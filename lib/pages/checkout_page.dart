@@ -2,23 +2,24 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../models/user_profile.dart';
-import '../theme/app_theme.dart';
 import 'my_orders_page.dart';
 import 'address_form_page.dart';
 
 class CheckoutPage extends StatefulWidget {
-  const CheckoutPage({super.key});
+  final Map<String, dynamic>? directOrderData;
+
+  const CheckoutPage({super.key, this.directOrderData});
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
-  UserProfile? _userProfile;
   List<dynamic> _savedAddresses = [];
   dynamic _selectedAddress; // Map or Object
   bool _isLoading = true;
   String? _selectedPaymentMethod = 'COD';
+  Map<String, dynamic>? _userProfile;
   
   // For new address form (if needed, or just specific address)
   final _addressController = TextEditingController();
@@ -158,7 +159,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'payment_method': _selectedPaymentMethod,
     };
 
-    final result = await ApiService.placeOrder(userId, orderData);
+    dynamic result;
+    if (widget.directOrderData != null) {
+      // Merge direct order details (product_id, quantity, unit_value)
+      orderData.addAll(widget.directOrderData!);
+      result = await ApiService.placeDirectOrder(userId, orderData);
+    } else {
+      result = await ApiService.placeOrder(userId, orderData);
+    }
 
     setState(() => _isLoading = false);
 
