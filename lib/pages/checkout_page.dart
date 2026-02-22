@@ -72,7 +72,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
               
               // Default select profile address or first default
               if (_savedAddresses.isNotEmpty) {
-                _selectedAddress = _savedAddresses.first; 
+                try {
+                  _selectedAddress = _savedAddresses.firstWhere((addr) => addr['is_default'] == true);
+                } catch (e) {
+                  _selectedAddress = _savedAddresses.first; 
+                }
               }
            }
          });

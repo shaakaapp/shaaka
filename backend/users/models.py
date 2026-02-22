@@ -68,3 +68,9 @@ class UserAddress(models.Model):
 
     def __str__(self):
         return f"{self.full_name} - {self.town_city}"
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            # Unset default on all other addresses for this user
+            UserAddress.objects.filter(user=self.user).exclude(id=self.id).update(is_default=False)
+        super().save(*args, **kwargs)
