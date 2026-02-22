@@ -5,6 +5,7 @@ import '../models/cart_order_models.dart';
 import '../theme/app_theme.dart';
 import 'checkout_page.dart';
 import 'wishlist_page.dart';
+import '../widgets/shimmer_widgets.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -132,24 +133,10 @@ class _CartPageState extends State<CartPage> {
         ],
       ),
       body: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Loading cart...',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).textTheme.bodyMedium!.color!,
-                    ),
-                  ),
-                ],
-              ),
+          ? ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: 4,
+              itemBuilder: (_, __) => const CartItemShimmer(),
             )
           : _error != null
               ? Center(

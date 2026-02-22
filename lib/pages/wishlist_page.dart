@@ -5,6 +5,7 @@ import '../services/storage_service.dart';
 import '../widgets/product_card.dart';
 import '../theme/app_theme.dart';
 import 'product_details_page.dart';
+import '../widgets/shimmer_widgets.dart';
 
 class WishlistPage extends StatefulWidget {
   const WishlistPage({super.key});
@@ -68,7 +69,7 @@ class _WishlistPageState extends State<WishlistPage> {
       ),
       backgroundColor: Colors.grey[50],
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const WishlistShimmer()
           : _wishlistProducts.isEmpty
               ? Center(
                   child: Column(

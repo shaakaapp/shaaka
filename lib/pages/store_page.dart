@@ -11,6 +11,7 @@ import 'add_product_page.dart';
 import 'search_page.dart';
 import 'category_products_page.dart';
 import '../models/auto_scroll_image.dart';
+import '../widgets/shimmer_widgets.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class StorePage extends StatefulWidget {
@@ -286,21 +287,7 @@ class _StorePageState extends State<StorePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading products...',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      );
+      return const StoreShimmer();
     }
 
     if (_error != null) {

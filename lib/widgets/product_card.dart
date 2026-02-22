@@ -23,6 +23,33 @@ class ProductCard extends StatefulWidget {
 class _ProductCardState extends State<ProductCard> {
   bool _isAdding = false;
 
+  /// Returns the lowest price available for this product across all units.
+  double get _lowestPrice {
+    final product = widget.product;
+
+    // If product has explicit variants, find the minimum price
+    if (product.variants.isNotEmpty) {
+      return product.variants.map((v) => v.price).reduce((a, b) => a < b ? a : b);
+    }
+
+    // Otherwise compute standard unit prices and find the minimum
+    final unit = product.unit.toLowerCase();
+    final basePrice = product.price;
+
+    List<double> prices;
+    if (unit == 'kg') {
+      prices = [basePrice * 0.25, basePrice * 0.5, basePrice * 1.0, basePrice * 2.0];
+    } else if (unit == 'l' || unit == 'liter' || unit == 'litre') {
+      prices = [basePrice * 0.25, basePrice * 0.5, basePrice * 1.0, basePrice * 2.0];
+    } else if (unit == 'dozen') {
+      prices = [basePrice * 0.5, basePrice * 1.0, basePrice * 2.0];
+    } else {
+      prices = [basePrice * 1.0, basePrice * 2.0, basePrice * 5.0];
+    }
+
+    return prices.reduce((a, b) => a < b ? a : b);
+  }
+
   Future<void> _addToCart() async {
     setState(() => _isAdding = true);
     
@@ -151,9 +178,7 @@ class _ProductCardState extends State<ProductCard> {
               children: [
                  Flexible(
                    child: Text(
-                      widget.product.variants.isNotEmpty
-                        ? 'From ₹${widget.product.variants.map((v) => v.price).reduce((a, b) => a < b ? a : b)}'
-                        : '₹${widget.product.price}',
+                      'From ₹${_lowestPrice.toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).textTheme.bodyLarge?.color, // Adapt to theme

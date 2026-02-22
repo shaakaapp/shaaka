@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../models/cart_order_models.dart';
 import 'order_detail_page.dart';
+import '../widgets/shimmer_widgets.dart';
 
 class MyOrdersPage extends StatefulWidget {
   final bool showBackButton;
@@ -95,7 +96,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
             : null,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const OrderListShimmer()
           : _orders.isEmpty
               ? const Center(child: Text('No orders yet'))
               : ListView.builder(
