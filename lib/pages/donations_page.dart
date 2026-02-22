@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../services/api_service.dart';
@@ -365,6 +366,9 @@ class _DonationsPageState extends State<DonationsPage> {
                    decoration: const InputDecoration(labelText: 'Amount Paid (₹) *', border: OutlineInputBorder()),
                    validator: (v) => v!.isEmpty ? 'Required' : null,
                    keyboardType: TextInputType.number,
+                   inputFormatters: [
+                     FilteringTextInputFormatter.allow(RegExp(r'^[1-9][0-9]*')),
+                   ],
                  ),
                  const SizedBox(height: 16),
                   TextFormField(
