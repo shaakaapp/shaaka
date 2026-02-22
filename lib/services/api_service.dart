@@ -5,6 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import '../models/user_profile.dart';
 import '../models/product.dart';
 import '../models/cart_order_models.dart';
+import 'cart_service.dart';
 
 class ApiService {
   // Change this to your Render backend URL when deployed
@@ -558,9 +559,11 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
+        final cart = Cart.fromJson(jsonDecode(response.body));
+        CartService.updateCount(cart.items.length);
         return {
           'success': true,
-          'data': Cart.fromJson(jsonDecode(response.body)),
+          'data': cart,
         };
       } else {
         return {
@@ -589,9 +592,11 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
+        final cart = Cart.fromJson(jsonDecode(response.body));
+        CartService.updateCount(cart.items.length);
         return {
           'success': true,
-          'data': Cart.fromJson(jsonDecode(response.body)),
+          'data': cart,
         };
       } else {
         return {
@@ -618,9 +623,11 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
+        final cart = Cart.fromJson(jsonDecode(response.body));
+        CartService.updateCount(cart.items.length);
         return {
           'success': true,
-          'data': Cart.fromJson(jsonDecode(response.body)),
+          'data': cart,
         };
       } else {
         return {
@@ -644,9 +651,11 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
+        final cart = Cart.fromJson(jsonDecode(response.body));
+        CartService.updateCount(cart.items.length);
         return {
           'success': true,
-          'data': Cart.fromJson(jsonDecode(response.body)),
+          'data': cart,
         };
       } else {
         return {
@@ -670,9 +679,11 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
+        final cart = Cart.fromJson(jsonDecode(response.body));
+        CartService.updateCount(cart.items.length);
         return {
           'success': true,
-          'data': Cart.fromJson(jsonDecode(response.body)),
+          'data': cart,
         };
       } else {
         return {

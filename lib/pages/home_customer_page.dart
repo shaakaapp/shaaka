@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import '../services/api_service.dart';
+import '../services/cart_service.dart';
 import '../theme/app_theme.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
@@ -19,30 +20,18 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
   int _selectedIndex = 0;
   int _refreshKey = 0;
   DateTime? _lastPressedAt;
-  int _cartItemCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _fetchCartCount();
+    _fetchInitialCart();
   }
 
-  Future<void> _fetchCartCount() async {
+  Future<void> _fetchInitialCart() async {
     final userId = await StorageService.getUserId();
-    if (userId == null) {
-      print('[Badge Debug] No userId found');
-      return;
-    }
-    
-    print('[Badge Debug] Fetching cart for user $userId');
-    final result = await ApiService.getCart(userId);
-    print('[Badge Debug] Cart fetch result: $result');
-    if (result['success'] == true && mounted) {
-      final cart = result['data'];
-      setState(() {
-        _cartItemCount = cart.items.length;
-        print('[Badge Debug] Updated _cartItemCount to $_cartItemCount');
-      });
+    if (userId != null) {
+      // Calling getCart automatically updates CartService.cartItemCountNotifier
+      await ApiService.getCart(userId);
     }
   }
 
@@ -64,7 +53,6 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
       _selectedIndex = index;
       if (index == 0 || index == 1 || index == 2) {
          _refreshPages(); // Refresh store, cart, orders on tap
-         _fetchCartCount(); // Also refresh the cart badge count
       }
     });
   }
@@ -158,15 +146,25 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
                 label: 'Store',
               ),
               BottomNavigationBarItem(
-                icon: Badge(
-                  isLabelVisible: _cartItemCount > 0,
-                  label: Text(_cartItemCount.toString()),
-                  child: const Icon(Icons.shopping_cart_outlined),
+                icon: ValueListenableBuilder<int>(
+                  valueListenable: CartService.cartItemCountNotifier,
+                  builder: (context, count, _) {
+                    return Badge(
+                      isLabelVisible: count > 0,
+                      label: Text(count.toString()),
+                      child: const Icon(Icons.shopping_cart_outlined),
+                    );
+                  },
                 ),
-                activeIcon: Badge(
-                  isLabelVisible: _cartItemCount > 0,
-                  label: Text(_cartItemCount.toString()),
-                  child: const Icon(Icons.shopping_cart),
+                activeIcon: ValueListenableBuilder<int>(
+                  valueListenable: CartService.cartItemCountNotifier,
+                  builder: (context, count, _) {
+                    return Badge(
+                      isLabelVisible: count > 0,
+                      label: Text(count.toString()),
+                      child: const Icon(Icons.shopping_cart),
+                    );
+                  },
                 ),
                 label: 'My Cart',
               ),
