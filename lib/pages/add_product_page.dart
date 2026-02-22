@@ -486,7 +486,10 @@ class _AddProductPageState extends State<AddProductPage> {
                                        Expanded(
                                          child: TextFormField(
                                            initialValue: variant['quantity'].toString(),
-                                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                           keyboardType: TextInputType.number,
+                                           inputFormatters: [
+                                             FilteringTextInputFormatter.allow(RegExp(r'^[1-9][0-9]*')),
+                                           ],
                                            decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
                                            onChanged: (val) => variant['quantity'] = double.tryParse(val) ?? 0,
                                          ),
