@@ -4,7 +4,7 @@ class Responsive {
   /// Defines the maximum width of the content area on a web/desktop screen
   /// to prevent it from stretching endlessly.
   static const double maxWebWidth = 1200.0;
-  
+
   static bool isMobile(BuildContext context) =>
       MediaQuery.of(context).size.width < 650;
 
@@ -34,8 +34,11 @@ class Responsive {
 
   /// Centers a widget and restricts its maximum width on standard web/desktop screens.
   /// If the screen is mobile, it expands to 100% width normally.
-  static Widget centeredWebContainer(BuildContext context, {required Widget child}) {
-    // We only restrict width on tablet/desktop. 
+  static Widget centeredWebContainer(
+    BuildContext context, {
+    required Widget child,
+  }) {
+    // We only restrict width on tablet/desktop.
     // On mobile, the bounding box width is simply the screen width.
     if (isMobile(context)) {
       return child;

@@ -142,8 +142,8 @@ class _CartPageState extends State<CartPage> {
                 itemBuilder: (_, i) => CartItemShimmer(index: i),
               )
             : _error != null
-                ? Center(
-                    child: Padding(
+              ? Center(
+                  child: Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -496,6 +496,7 @@ class _CartPageState extends State<CartPage> {
                         ),
                       ],
                     ),
+      ),
     );
   }
 }

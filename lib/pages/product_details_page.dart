@@ -631,7 +631,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          children: [
             // Product Image Gallery
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.45,
@@ -1058,6 +1058,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
             ],
           ],
         ),
+      ),
       ),
       floatingActionButton: (_tabController.index == 1 && 
               _currentUserId != null &&
