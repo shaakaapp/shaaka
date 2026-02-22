@@ -9,7 +9,7 @@ import '../theme/app_theme.dart';
 import '../services/location_service.dart';
 import 'login_page.dart';
 import '../widgets/shimmer_widgets.dart';
-
+import '../utils/responsive.dart';
 
 class ProfilePage extends StatefulWidget {
   final bool isCompletingProfile;
