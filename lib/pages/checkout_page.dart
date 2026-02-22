@@ -42,7 +42,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({dynamic newSelectedAddress}) async {
     setState(() => _isLoading = true);
     try {
       final userId = await StorageService.getUserId();
@@ -70,8 +70,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
               
               _savedAddresses = [if (profileAddr != null) profileAddr, ...saved];
               
+              if (newSelectedAddress != null) {
+                 // Try to match the newly returned address exactly from the freshly loaded list, or just use the object
+                 try {
+                     _selectedAddress = _savedAddresses.firstWhere((a) => a['id'] == newSelectedAddress['id']);
+                 } catch (e) {
+                     _selectedAddress = newSelectedAddress;
+                 }
+              }
               // Default select profile address or first default
-              if (_savedAddresses.isNotEmpty) {
+              else if (_savedAddresses.isNotEmpty) {
                 try {
                   _selectedAddress = _savedAddresses.firstWhere((addr) => addr['is_default'] == true);
                 } catch (e) {
@@ -96,8 +104,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       MaterialPageRoute(builder: (context) => const AddressFormPage()),
     );
 
-    if (result == true) {
-      _loadData(); // Refresh addresses if added
+    if (result != null) {
+      _loadData(newSelectedAddress: result); // Refresh addresses and select new one
     }
   }
 
@@ -107,8 +115,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       MaterialPageRoute(builder: (context) => AddressFormPage(initialData: address)),
     );
 
-    if (result == true) {
-      _loadData(); // Refresh addresses if updated
+    if (result != null) {
+      _loadData(newSelectedAddress: result); // Refresh addresses and select updated one
     }
   }
 

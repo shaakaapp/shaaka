@@ -181,7 +181,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
 
       if (mounted) {
         if (result['success'] == true) {
-          Navigator.pop(context, true); // Return success
+          Navigator.pop(context, result['data']); // Return the created/updated address
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(result['error'].toString()), backgroundColor: Colors.red),
