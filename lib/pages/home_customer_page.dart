@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:badges/badges.dart' as badges;
 import '../services/storage_service.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
@@ -18,6 +20,26 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
   int _selectedIndex = 0;
   int _refreshKey = 0;
   DateTime? _lastPressedAt;
+  int _cartItemCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCartCount();
+  }
+
+  Future<void> _fetchCartCount() async {
+    final userId = await StorageService.getUserId();
+    if (userId == null) return;
+    
+    final result = await ApiService.getCart(userId);
+    if (result['success'] == true && mounted) {
+      final cart = result['data'];
+      setState(() {
+        _cartItemCount = cart.items.length;
+      });
+    }
+  }
 
   List<Widget> get _pages => <Widget>[
     StorePage(key: ValueKey('store_$_refreshKey'), isVendorView: false),
@@ -37,6 +59,7 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
       _selectedIndex = index;
       if (index == 0 || index == 1 || index == 2) {
          _refreshPages(); // Refresh store, cart, orders on tap
+         _fetchCartCount(); // Also refresh the cart badge count
       }
     });
   }
@@ -123,23 +146,37 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
           ),
           child: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
-            items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
+            items: <BottomNavigationBarItem>[
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.store_outlined),
                 activeIcon: Icon(Icons.store),
                 label: 'Store',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.shopping_cart_outlined),
-                activeIcon: Icon(Icons.shopping_cart),
+                icon: badges.Badge(
+                  showBadge: _cartItemCount > 0,
+                  badgeContent: Text(
+                    _cartItemCount.toString(),
+                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                  child: const Icon(Icons.shopping_cart_outlined),
+                ),
+                activeIcon: badges.Badge(
+                  showBadge: _cartItemCount > 0,
+                  badgeContent: Text(
+                    _cartItemCount.toString(),
+                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                  child: const Icon(Icons.shopping_cart),
+                ),
                 label: 'My Cart',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.list_alt_outlined),
                 activeIcon: Icon(Icons.list_alt),
                 label: 'My Orders',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.volunteer_activism_outlined),
                 activeIcon: Icon(Icons.volunteer_activism),
                 label: 'Donations',
