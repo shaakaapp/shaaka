@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import '../services/api_service.dart';
 import '../services/cart_service.dart';
+import '../theme/app_theme.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
 import 'store_page.dart';
@@ -16,8 +17,8 @@ class HomeWomenMerchantPage extends StatefulWidget {
   @override
   State<HomeWomenMerchantPage> createState() => _HomeWomenMerchantPageState();
 }
-
-
+class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
+  int _selectedIndex = 0; // Default to first tab (Common Store)
   int _refreshKey = 0;
 
   @override
