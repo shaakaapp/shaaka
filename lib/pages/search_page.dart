@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../models/product.dart';
 import '../services/api_service.dart';
 import 'search_results_page.dart';
@@ -20,6 +21,9 @@ class _SearchPageState extends State<SearchPage> {
   List<Product> _trendingProducts = [];
   bool _isLoadingTrending = true;
 
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +32,33 @@ class _SearchPageState extends State<SearchPage> {
     });
     _loadRecentSearches();
     _loadTrendingProducts();
+  }
+
+  void _listen() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (val) {
+          if (val == 'done' || val == 'notListening') {
+            setState(() => _isListening = false);
+            if (_searchController.text.isNotEmpty) {
+               _performSearch(_searchController.text);
+            }
+          }
+        },
+        onError: (val) => print('onError: $val'),
+      );
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) => setState(() {
+            _searchController.text = val.recognizedWords;
+          }),
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
   }
 
   Future<void> _loadRecentSearches() async {
@@ -99,9 +130,25 @@ class _SearchPageState extends State<SearchPage> {
             decoration: InputDecoration(
               hintText: 'Search for products...',
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.close, color: Colors.grey),
-                onPressed: _searchController.clear,
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(_isListening ? Icons.mic : Icons.mic_none, 
+                      color: _isListening ? Colors.red : Colors.grey),
+                    onPressed: _listen,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.grey),
+                    onPressed: () {
+                      _searchController.clear();
+                      if (_isListening) {
+                        _speech.stop();
+                        setState(() => _isListening = false);
+                      }
+                    },
+                  ),
+                ],
               ),
               contentPadding: const EdgeInsets.symmetric(vertical: 0),
               border: OutlineInputBorder(

@@ -435,9 +435,20 @@ class _ProfilePageState extends State<ProfilePage> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter new password';
                           }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
+                          
+                          // Password validation rules
+                          final bool hasMinLength = value.length >= 8;
+                          final bool hasUppercase = value.contains(RegExp(r'[A-Z]'));
+                          final bool hasLowercase = value.contains(RegExp(r'[a-z]'));
+                          final bool hasDigits = value.contains(RegExp(r'[0-9]'));
+                          final bool hasSpecialCharacters = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+                          if (!hasMinLength) return 'At least 8 Characters are required';
+                          if (!hasUppercase) return 'At least 1 Uppercase letter is required';
+                          if (!hasLowercase) return 'At least 1 Lowercase letter is required';
+                          if (!hasDigits) return 'At least 1 Number is required';
+                          if (!hasSpecialCharacters) return 'At least 1 Special character is required';
+
                           return null;
                         },
                       ),

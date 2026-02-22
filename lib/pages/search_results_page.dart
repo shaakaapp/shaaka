@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../models/product.dart';
 import '../services/api_service.dart';
 import '../widgets/product_card.dart';
@@ -28,6 +29,36 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
   double? _minPrice;
   double? _maxPrice;
   bool? _inStockOnly;
+
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
+
+  void _listen() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (val) {
+          if (val == 'done' || val == 'notListening') {
+            setState(() => _isListening = false);
+            if (_searchController.text.isNotEmpty) {
+               _performSearch(_searchController.text);
+            }
+          }
+        },
+        onError: (val) => print('onError: $val'),
+      );
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) => setState(() {
+            _searchController.text = val.recognizedWords;
+          }),
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
+  }
   
   final List<String> _categories = [
     'Fruits',
@@ -393,15 +424,28 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
             decoration: InputDecoration(
               hintText: 'Search for products...',
               prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () {
-                        _searchController.clear();
-                        _performSearch('');
-                      },
-                    )
-                  : null,
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   IconButton(
+                      icon: Icon(_isListening ? Icons.mic : Icons.mic_none, 
+                        color: _isListening ? Colors.red : Colors.grey),
+                      onPressed: _listen,
+                   ),
+                   if (_searchController.text.isNotEmpty)
+                    IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () {
+                          _searchController.clear();
+                          _performSearch('');
+                          if (_isListening) {
+                            _speech.stop();
+                            setState(() => _isListening = false);
+                          }
+                        },
+                      )
+                ],
+              ),
               contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
             textInputAction: TextInputAction.search,

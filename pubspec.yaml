@@ -44,6 +44,7 @@ dependencies:
   intl: ^0.20.2
   connectivity_plus: ^6.0.0
   geocoding: ^4.0.0
+  speech_to_text: ^7.3.0
 
 dev_dependencies:
   flutter_test:

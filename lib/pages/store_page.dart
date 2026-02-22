@@ -10,7 +10,7 @@ import 'product_details_page.dart';
 import 'add_product_page.dart';
 import 'search_page.dart';
 import 'category_products_page.dart';
-import '../models/auto_scroll_image.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class StorePage extends StatefulWidget {
   final bool isVendorView;
@@ -34,6 +34,35 @@ class _StorePageState extends State<StorePage> {
   String? _error;
   Map<String, List<Product>> _categorizedProducts = {};
     String? _selectedCategory;
+
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
+
+  void _listen() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (val) {
+          if (val == 'done' || val == 'notListening') {
+            setState(() => _isListening = false);
+            _filterProducts(_searchController.text);
+          }
+        },
+        onError: (val) => print('onError: $val'),
+      );
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) => setState(() {
+            _searchController.text = val.recognizedWords;
+            _filterProducts(val.recognizedWords);
+          }),
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
+  }
 
   final Map<String, String> _categoryEmojis = {
     'Vegetables': '🥦',
@@ -97,7 +126,12 @@ class _StorePageState extends State<StorePage> {
     print("AutoScroll Api Result: $result");
     if (mounted && result['success'] == true) {
       final List<dynamic> rawData = result['data'];
-      final List<AutoScrollImage> allBanners = rawData.map((e) => AutoScrollImage.fromJson(e)).toList();
+      final List<AutoScrollImage> allBanners = [];
+      for (var item in rawData) {
+        if (item is Map<String, dynamic>) {
+          allBanners.add(AutoScrollImage.fromJson(item));
+        }
+      }
       print("Parsed banners count: ${allBanners.length}");
       setState(() {
         _topBanners = allBanners.where((b) => b.placement == 'top').toList();
@@ -410,8 +444,16 @@ class _StorePageState extends State<StorePage> {
                   Icons.search_rounded,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                        icon: Icon(_isListening ? Icons.mic : Icons.mic_none, 
+                          color: _isListening ? Colors.red : Colors.grey),
+                        onPressed: _listen,
+                    ),
+                    if (_searchController.text.isNotEmpty)
+                      IconButton(
                         icon: Icon(
                           Icons.clear_rounded,
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
@@ -419,9 +461,14 @@ class _StorePageState extends State<StorePage> {
                         onPressed: () {
                           _searchController.clear();
                           _filterProducts('');
+                          if (_isListening) {
+                            _speech.stop();
+                            setState(() => _isListening = false);
+                          }
                         },
-                      )
-                    : null,
+                      ),
+                  ],
+                )
               ),
               onChanged: _filterProducts,
             ),

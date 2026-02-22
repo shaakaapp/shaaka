@@ -16,11 +16,99 @@ class ProductListCreateView(generics.ListCreateAPIView):
         search_query = self.request.query_params.get('search', None)
         if search_query:
             from django.db.models import Q
-            queryset = queryset.filter(
-                Q(name__icontains=search_query) | 
-                Q(description__icontains=search_query) |
-                Q(category__icontains=search_query)
-            )
+            words = search_query.split()
+            
+            # Smart category synonyms mapped to Category enum
+            synonyms = {
+                # Snacks & Sweets
+                'snack': ['Snacks', 'Sweets', 'Dry fruits', 'Veg starters', 'Non Veg starters', 'chat', 'namkeen', 'chips', 'biscuit', 'cookies', 'mixture', 'bhujia', 'mathri'],
+                'sweet': ['Sweets', 'Desserts', 'mithai', 'halwa', 'ladoo', 'barfi', 'pedha', 'jalebi', 'gulab jamun', 'rasgulla', 'chikki'],
+                'dessert': ['Sweets', 'Desserts', 'ice cream', 'cake', 'pastry'],
+                
+                # Vegetables & Fruits
+                'veg': ['Vegetables', 'Veg starters', 'Veg thali', 'Pulao', 'greens', 'sabzi', 'tarkari'],
+                'vegetable': ['Vegetables', 'Veg starters', 'Veg thali', 'Pulao', 'greens', 'sabzi', 'tarkari'],
+                'fruit': ['Fruits', 'Dry fruits', 'phal', 'fresh fruit'],
+                'dry fruit': ['Dry fruits', 'nuts', 'badam', 'kaju', 'pista', 'kismis', 'almond', 'cashew', 'raisin', 'walnut', 'dates'],
+                'nut': ['Dry fruits', 'nuts', 'badam', 'kaju', 'pista', 'kismis', 'almond', 'cashew', 'raisin', 'walnut', 'dates'],
+                
+                # Meat & Non-Veg
+                'nonveg': ['Non Veg starters', 'Non veg Thali', 'Biryani', 'meat', 'chicken', 'mutton', 'fish', 'egg', 'seafood'],
+                'meat': ['Non Veg starters', 'Non veg Thali', 'Biryani', 'chicken', 'mutton', 'fish', 'egg', 'seafood'],
+                'chicken': ['Non Veg starters', 'Non veg Thali', 'Biryani', 'poultry', 'murgh'],
+                'mutton': ['Non Veg starters', 'Non veg Thali', 'Biryani', 'lamb', 'goat', 'gosht'],
+                'fish': ['Non Veg starters', 'Non veg Thali', 'Biryani', 'seafood', 'prawn', 'crab', 'machli'],
+                'egg': ['Non Veg starters', 'Non veg Thali', 'Biryani', 'anda'],
+
+                # Drinks & Beverages
+                'drink': ['Drinks', 'Tea Powders', 'beverage', 'juice', 'soda', 'cool drink', 'water', 'lassi', 'buttermilk', 'chai', 'coffee'],
+                'beverage': ['Drinks', 'Tea Powders', 'juice', 'soda', 'cool drink', 'water', 'lassi', 'buttermilk', 'chai', 'coffee'],
+                'tea': ['Drinks', 'Tea Powders', 'chai', 'green tea', 'black tea'],
+                'coffee': ['Drinks', 'Tea Powders', 'filter coffee', 'instant coffee'],
+
+                # Groceries (Staples)
+                'grocery': ['Grains', 'Pulses', 'Flours', 'Rice', 'Oils', 'Spices', 'Millets', 'staple', 'pantry', 'kirana', 'provisions'],
+                'staple': ['Grains', 'Pulses', 'Flours', 'Rice', 'Oils', 'Spices', 'Millets', 'pantry', 'kirana', 'provisions'],
+                'grain': ['Grains', 'Rice', 'Millets', 'wheat', 'gehu', 'jowar', 'bajra', 'oats'],
+                'pulse': ['Pulses', 'dal', 'dhal', 'lentil', 'chana', 'moong', 'toor', 'urad', 'masoor', 'rajma', 'chole', 'lobia', 'peas', 'beans', 'gram'],
+                'dal': ['Pulses', 'dhal', 'lentil', 'chana', 'moong', 'toor', 'urad', 'masoor', 'rajma', 'chole'],
+                'lentil': ['Pulses', 'dal', 'dhal', 'chana', 'moong', 'toor', 'urad', 'masoor', 'rajma', 'chole'],
+                'flour': ['Flours', 'atta', 'maida', 'besan', 'sooji', 'rawa', 'wheat flour', 'rice flour', 'corn flour'],
+                'atta': ['Flours', 'wheat flour'],
+                'rice': ['Rice', 'chawal', 'basmati', 'sona masuri', 'raw rice', 'boiled rice', 'brown rice', 'poha', 'murmure'],
+                'oil': ['Oils', 'tel', 'cooking oil', 'sunflower oil', 'groundnut oil', 'mustard oil', 'coconut oil', 'sesame oil', 'ghee'],
+                'ghee': ['Oils', 'Dairy', 'clarified butter'],
+                'spice': ['Spices', 'masala', 'mirchi', 'haldi', 'dhaniya', 'jeera', 'mustard seeds', 'rai', 'methi', 'elaichi', 'clove', 'cinnamon', 'pepper', 'garam masala'],
+                'masala': ['Spices', 'spice', 'mirchi', 'haldi', 'dhaniya', 'jeera', 'mustard seeds', 'rai', 'methi', 'elaichi', 'clove', 'cinnamon', 'pepper', 'garam masala'],
+                'millet': ['Millets', 'ragi', 'jowar', 'bajra', 'foxtail', 'little millet', 'barnyard millet', 'kodo millet', 'proso millet', 'siridhanya'],
+                
+                # Dairy
+                'dairy': ['Dairy', 'milk', 'dudh', 'curd', 'dahi', 'yogurt', 'paneer', 'cheese', 'butter', 'makhan', 'ghee', 'cream'],
+                'milk': ['Dairy', 'dudh'],
+                'curd': ['Dairy', 'dahi', 'yogurt'],
+                'paneer': ['Dairy', 'cottage cheese'],
+
+                # Meals (Prepared Food)
+                'dinner': ['Thali', 'Veg thali', 'Non veg Thali', 'Biryani', 'Pulao', 'meal', 'bhojan'],
+                'lunch': ['Thali', 'Veg thali', 'Non veg Thali', 'Biryani', 'Pulao', 'meal', 'bhojan'],
+                'thali': ['Thali', 'Veg thali', 'Non veg Thali', 'meal', 'bhojan'],
+                'breakfast': ['Tiffins', 'nasta', 'nashta', 'morning meal'],
+                'tiffin': ['Tiffins', 'breakfast', 'nasta', 'nashta', 'morning meal', 'idli', 'dosa', 'vada', 'upma', 'poori'],
+                'starter': ['Veg starters', 'Non Veg starters', 'appetizer', 'snack', 'kebab', 'tikka', 'pakoda', 'samosa'],
+                
+                # Broad/Catch-all terms
+                'food': ['Fruits', 'Vegetables', 'Dairy', 'Grains', 'Spices', 'Veg starters', 'Non Veg starters', 'Biryani', 'Pulao', 'Veg thali', 'Non veg Thali', 'Sweets', 'Snacks', 'Dry fruits', 'Tiffins', 'Desserts', 'Millets', 'Pulses', 'Flours', 'Rice', 'Oils'],
+                'item': ['Others'],
+                'other': ['Others']
+            }
+            
+            for word in words:
+                word_lower = word.lower()
+                
+                # Basic stemming (remove trailing s)
+                stemmed_word = word_lower
+                if word_lower.endswith('ies') and len(word_lower) > 4:
+                    stemmed_word = word_lower[:-3] + 'y'
+                elif word_lower.endswith('es') and len(word_lower) > 3:
+                    stemmed_word = word_lower[:-2]
+                elif word_lower.endswith('s') and len(word_lower) > 2:
+                    stemmed_word = word_lower[:-1]
+                
+                # Check for category synonyms
+                related_cats = []
+                for key, cats in synonyms.items():
+                    if key in word_lower or key in stemmed_word:
+                        related_cats.extend(cats)
+                
+                # Build query condition for this word
+                word_q = Q(name__icontains=word) | Q(description__icontains=word) | Q(category__icontains=word)
+                if word_lower != stemmed_word:
+                    word_q |= Q(name__icontains=stemmed_word) | Q(description__icontains=stemmed_word) | Q(category__icontains=stemmed_word)
+                
+                for cat in related_cats:
+                    word_q |= Q(category__icontains=cat)
+                    
+                queryset = queryset.filter(word_q)
 
         # Handle Ordering
         ordering = self.request.query_params.get('ordering', '-created_at')
