@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/cart_order_models.dart';
 import '../models/product.dart';
 import '../services/api_service.dart';
@@ -577,21 +578,42 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> with SingleTick
     
     return Scaffold(
       extendBodyBehindAppBar: true,
-      // backgroundColor: AppTheme.softBeige,
       appBar: AppBar(
-        backgroundColor: Colors.transparent, // Make it transparent like a typical detail view? Or keep warmWhite?
-        // User said "only show the back button".
-        // If I make it transparent, it might overlap content if not handled (though scaffold body is typically below).
-        // Let's keep the background color for now but remove title.
-        // Actually, often detail pages have transparent app bar over image.
-        // But the previous code had warmWhite. I'll stick to removing the title content first.
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        // ── Custom circular white back button ──
+        leading: Container(
+          margin: const EdgeInsets.only(left: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.black87),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withOpacity(0.9),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: IconButton(
               icon: Icon(
