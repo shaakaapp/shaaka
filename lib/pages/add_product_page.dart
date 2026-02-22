@@ -339,13 +339,17 @@ class _AddProductPageState extends State<AddProductPage> {
                       Expanded(
                         child: TextFormField(
                           controller: _priceController,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                           decoration: const InputDecoration(
                               labelText: 'Price (₹) *',
                               border: OutlineInputBorder()),
-                          validator: (val) =>
-                              !_hasVariants && (val == null || val.isEmpty) ? 'Required' : null,
+                          validator: (val) {
+                            if (!_hasVariants && (val == null || val.isEmpty)) return 'Required';
+                            final n = int.tryParse(val ?? '');
+                            if (n != null && n < 1) return 'Must be ≥ 1';
+                            return null;
+                          },
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -424,18 +428,32 @@ class _AddProductPageState extends State<AddProductPage> {
                                        Expanded(
                                          child: TextFormField(
                                            initialValue: variant['price'].toString(),
-                                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                           keyboardType: TextInputType.number,
+                                           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                            decoration: const InputDecoration(labelText: 'Price (₹)', isDense: true, border: OutlineInputBorder()),
-                                           onChanged: (val) => variant['price'] = double.tryParse(val) ?? 0,
+                                           onChanged: (val) => variant['price'] = int.tryParse(val) ?? 0,
+                                           validator: (val) {
+                                             if (val == null || val.isEmpty) return 'Required';
+                                             final n = int.tryParse(val);
+                                             if (n == null || n < 1) return 'Must be ≥ 1';
+                                             return null;
+                                           },
                                          ),
                                        ),
                                        const SizedBox(width: 8),
                                        Expanded(
                                          child: TextFormField(
                                            initialValue: (variant['stock_quantity'] ?? 0).toString(),
-                                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                           keyboardType: TextInputType.number,
+                                           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                            decoration: const InputDecoration(labelText: 'Stock', isDense: true, border: OutlineInputBorder()),
-                                           onChanged: (val) => variant['stock_quantity'] = double.tryParse(val) ?? 0,
+                                           onChanged: (val) => variant['stock_quantity'] = int.tryParse(val) ?? 0,
+                                           validator: (val) {
+                                             if (val == null || val.isEmpty) return 'Required';
+                                             final n = int.tryParse(val);
+                                             if (n == null || n < 1) return 'Must be ≥ 1';
+                                             return null;
+                                           },
                                          ),
                                        ),
                                        // Placeholder to align with the delete button above
@@ -473,12 +491,16 @@ class _AddProductPageState extends State<AddProductPage> {
               if (!_hasVariants)
                 TextFormField(
                   controller: _stockController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: const InputDecoration(
                       labelText: 'Stock Quantity *', border: OutlineInputBorder()),
-                  // inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*'))], // Optional: strict regex
-                  validator: (val) =>
-                      val == null || val.isEmpty ? 'Required' : null,
+                  validator: (val) {
+                    if (!_hasVariants && (val == null || val.isEmpty)) return 'Required';
+                    final n = int.tryParse(val ?? '');
+                    if (n != null && n < 1) return 'Must be ≥ 1';
+                    return null;
+                  },
                 ),
               const SizedBox(height: 16),
               
