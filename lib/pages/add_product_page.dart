@@ -58,7 +58,6 @@ class _AddProductPageState extends State<AddProductPage> {
     'l',
     'ml',
     'pcs',
-    'dozen',
     'box',
     'pack',
     'plate',
@@ -117,13 +116,104 @@ class _AddProductPageState extends State<AddProductPage> {
     super.dispose();
   }
 
-  Future<void> _pickImages() async {
-    final List<XFile> images = await _picker.pickMultiImage();
-    if (images.isNotEmpty) {
-      setState(() {
-        _selectedImages.addAll(images);
-      });
-    }
+  /// Shows a bottom sheet offering Camera or Gallery.
+  void _showImageSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text('Add Product Photo',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // ─ Camera ─
+                  _sourceOption(
+                    ctx,
+                    icon: Icons.camera_alt_rounded,
+                    label: 'Camera',
+                    color: Colors.teal,
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final XFile? photo = await _picker.pickImage(
+                        source: ImageSource.camera,
+                        imageQuality: 85,
+                      );
+                      if (photo != null) {
+                        setState(() => _selectedImages.add(photo));
+                      }
+                    },
+                  ),
+                  // ─ Gallery ─
+                  _sourceOption(
+                    ctx,
+                    icon: Icons.photo_library_rounded,
+                    label: 'Gallery',
+                    color: Colors.blue,
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final List<XFile> images = await _picker.pickMultiImage(
+                        imageQuality: 85,
+                      );
+                      if (images.isNotEmpty) {
+                        setState(() => _selectedImages.addAll(images));
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sourceOption(
+    BuildContext ctx, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 130,
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 36, color: color),
+            const SizedBox(height: 8),
+            Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: color)),
+          ],
+        ),
+      ),
+    );
   }
 
   void _removeImage(int index) {
@@ -595,7 +685,7 @@ class _AddProductPageState extends State<AddProductPage> {
                     
                     // Add Button
                     GestureDetector(
-                      onTap: _pickImages,
+                      onTap: _showImageSourceSheet,
                       child: Container(
                         width: 100,
                         height: 100,
