@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
+import '../utils/responsive.dart';
 
 class DonationsPage extends StatefulWidget {
   const DonationsPage({super.key});
@@ -213,8 +214,11 @@ class _DonationsPageState extends State<DonationsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Donate')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      body: Responsive.centeredWebContainer(
+        context,
+        maxWidth: 600,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
@@ -452,6 +456,7 @@ class _DonationsPageState extends State<DonationsPage> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

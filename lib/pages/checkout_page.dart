@@ -234,10 +234,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
       appBar: AppBar(
         title: const Text('Checkout'),
         elevation: 0,
-      ),
-      body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
+      body: Responsive.centeredWebContainer(
+        context,
+        maxWidth: 600,
+        child: _isLoading
+            ? Center(
+                child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
               ),
             )
@@ -361,6 +363,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ],
               ),
             ),
+      ),
     );
   }
 }

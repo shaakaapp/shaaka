@@ -696,9 +696,12 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Added extra bottom padding
-        child: Column(
+      body: Responsive.centeredWebContainer(
+        context,
+        maxWidth: 600,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Added extra bottom padding
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Profile Picture
@@ -1045,6 +1048,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

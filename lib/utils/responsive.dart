@@ -37,6 +37,7 @@ class Responsive {
   static Widget centeredWebContainer(
     BuildContext context, {
     required Widget child,
+    double maxWidth = maxWebWidth,
   }) {
     // We only restrict width on tablet/desktop.
     // On mobile, the bounding box width is simply the screen width.
@@ -46,7 +47,7 @@ class Responsive {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: maxWebWidth),
+        constraints: BoxConstraints(maxWidth: maxWidth),
         child: child,
       ),
     );

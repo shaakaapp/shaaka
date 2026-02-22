@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive.dart';
 import 'profile_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -434,8 +435,11 @@ class _RegisterPageState extends State<RegisterPage> {
         title: const Text('Register'),
         elevation: 0,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
+      body: Responsive.centeredWebContainer(
+        context,
+        maxWidth: 600,
+        child: SafeArea(
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -854,10 +858,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ],
                 ),
-              ),
             ],
           ),
         ),
+      ),
       ),
     );
   }

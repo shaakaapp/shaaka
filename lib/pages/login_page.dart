@@ -7,6 +7,7 @@ import 'home_customer_page.dart';
 import 'home_vendor_page.dart';
 import 'home_women_merchant_page.dart';
 import 'profile_page.dart';
+import '../utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -112,8 +113,11 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       // backgroundColor: AppTheme.softBeige,
-      body: SafeArea(
-        child: SingleChildScrollView(
+      body: Responsive.centeredWebContainer(
+        context,
+        maxWidth: 600,
+        child: SafeArea(
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
@@ -350,6 +354,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

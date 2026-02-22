@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../services/location_service.dart';
+import '../utils/responsive.dart';
 
 class AddressFormPage extends StatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -208,10 +209,13 @@ class _AddressFormPageState extends State<AddressFormPage> {
         elevation: 0,
       ),
       // backgroundColor: Colors.white,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+      body: Responsive.centeredWebContainer(
+        context,
+        maxWidth: 600,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -398,6 +402,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
                 ),
               ),
             ),
+      ),
     );
   }
 }

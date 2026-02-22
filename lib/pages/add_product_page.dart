@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
+import '../utils/responsive.dart';
 import '../models/product.dart';
 
 class AddProductPage extends StatefulWidget {
@@ -372,8 +373,11 @@ class _AddProductPageState extends State<AddProductPage> {
             Text(widget.product != null ? 'Edit Product' : 'Add Product'),
         ],
       )),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 32),
+      body: Responsive.centeredWebContainer(
+        context,
+        maxWidth: 600,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 32),
         child: Form(
           key: _formKey,
           child: Column(
@@ -729,6 +733,7 @@ class _AddProductPageState extends State<AddProductPage> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
