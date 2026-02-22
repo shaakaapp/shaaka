@@ -40,6 +40,25 @@ class _DonationsPageState extends State<DonationsPage> {
   final ImagePicker _picker = ImagePicker();
 
   @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+  }
+
+  Future<void> _fetchUserProfile() async {
+    final userId = await StorageService.getUserId();
+    if (userId != null) {
+      final result = await ApiService.getProfile(userId);
+      if (result['success'] == true && mounted) {
+        final profile = result['data'];
+        setState(() {
+          _contactNumberController.text = profile.mobileNumber ?? '';
+        });
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _itemNameController.dispose();
     _descriptionController.dispose();
