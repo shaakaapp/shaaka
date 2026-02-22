@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:badges/badges.dart' as badges;
 import '../services/storage_service.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -30,13 +29,19 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
 
   Future<void> _fetchCartCount() async {
     final userId = await StorageService.getUserId();
-    if (userId == null) return;
+    if (userId == null) {
+      print('[Badge Debug] No userId found');
+      return;
+    }
     
+    print('[Badge Debug] Fetching cart for user $userId');
     final result = await ApiService.getCart(userId);
+    print('[Badge Debug] Cart fetch result: $result');
     if (result['success'] == true && mounted) {
       final cart = result['data'];
       setState(() {
         _cartItemCount = cart.items.length;
+        print('[Badge Debug] Updated _cartItemCount to $_cartItemCount');
       });
     }
   }
@@ -153,20 +158,14 @@ class _HomeCustomerPageState extends State<HomeCustomerPage> {
                 label: 'Store',
               ),
               BottomNavigationBarItem(
-                icon: badges.Badge(
-                  showBadge: _cartItemCount > 0,
-                  badgeContent: Text(
-                    _cartItemCount.toString(),
-                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
+                icon: Badge(
+                  isLabelVisible: _cartItemCount > 0,
+                  label: Text(_cartItemCount.toString()),
                   child: const Icon(Icons.shopping_cart_outlined),
                 ),
-                activeIcon: badges.Badge(
-                  showBadge: _cartItemCount > 0,
-                  badgeContent: Text(
-                    _cartItemCount.toString(),
-                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
+                activeIcon: Badge(
+                  isLabelVisible: _cartItemCount > 0,
+                  label: Text(_cartItemCount.toString()),
                   child: const Icon(Icons.shopping_cart),
                 ),
                 label: 'My Cart',
