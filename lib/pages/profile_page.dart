@@ -791,18 +791,20 @@ class _ProfilePageState extends State<ProfilePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Address Information',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        const Flexible(
+                          child: Text(
+                            'Address Information',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         if (_isEditing)
                           TextButton.icon(
                             onPressed: _getCurrentLocation,
-                            icon: const Icon(Icons.my_location, color: Colors.blue),
-                            label: const Text('Use Current Location', style: TextStyle(color: Colors.blue)),
+                            icon: const Icon(Icons.my_location, size: 16, color: Colors.blue),
+                            label: const Text('My Location', style: TextStyle(color: Colors.blue, fontSize: 13)),
                           ),
                       ],
                     ),
