@@ -250,8 +250,16 @@ class _DonationsPageState extends State<DonationsPage> {
                   TextFormField(
                    controller: _contactNumberController,
                    decoration: const InputDecoration(labelText: 'Contact Number *', border: OutlineInputBorder()),
-                   validator: (v) => v!.isEmpty ? 'Required' : null,
+                    validator: (v) {
+                      if (v!.isEmpty) return 'Required';
+                      if (v.length != 10) return 'Must be 10 digits';
+                      return null;
+                    },
                    keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^[6-9][0-9]*')),
+                      LengthLimitingTextInputFormatter(10),
+                    ],
                  ),
                  const SizedBox(height: 16),
                  TextFormField(
@@ -331,8 +339,16 @@ class _DonationsPageState extends State<DonationsPage> {
                    TextFormField(
                     controller: _contactNumberController,
                     decoration: const InputDecoration(labelText: 'Contact Number *', border: OutlineInputBorder()),
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    validator: (v) {
+                      if (v!.isEmpty) return 'Required';
+                      if (v.length != 10) return 'Must be 10 digits';
+                      return null;
+                    },
                     keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^[6-9][0-9]*')),
+                      LengthLimitingTextInputFormatter(10),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
