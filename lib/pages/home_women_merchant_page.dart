@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'login_page.dart';
 import 'profile_page.dart';
@@ -20,6 +21,26 @@ class HomeWomenMerchantPage extends StatefulWidget {
 class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
   int _selectedIndex = 0; // Default to first tab (Common Store)
   int _refreshKey = 0;
+  int _cartItemCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCartCount();
+  }
+
+  Future<void> _fetchCartCount() async {
+    final userId = await StorageService.getUserId();
+    if (userId == null) return;
+    
+    final result = await ApiService.getCart(userId);
+    if (result['success'] == true && mounted) {
+      final cart = result['data'];
+      setState(() {
+        _cartItemCount = cart.items.length;
+      });
+    }
+  }
 
   List<Widget> get _pages => <Widget>[
     StorePage(key: ValueKey('store_$_refreshKey'), isVendorView: false), // Common Store
@@ -39,6 +60,9 @@ class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
     setState(() {
       _selectedIndex = index;
       _refreshKey++; // Refresh when switching tabs
+      if (index == 0 || index == 1 || index == 2 || index == 3) {
+        _fetchCartCount();
+      }
     });
   }
 
@@ -126,28 +150,36 @@ class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
           ),
           child: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
-            items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
+            items: <BottomNavigationBarItem>[
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.store_outlined),
                 activeIcon: Icon(Icons.store),
                 label: 'Store',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.storefront_outlined),
                 activeIcon: Icon(Icons.storefront),
                 label: 'My Business',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.shopping_cart_outlined),
-                activeIcon: Icon(Icons.shopping_cart),
+                icon: Badge(
+                  isLabelVisible: _cartItemCount > 0,
+                  label: Text(_cartItemCount.toString()),
+                  child: const Icon(Icons.shopping_cart_outlined),
+                ),
+                activeIcon: Badge(
+                  isLabelVisible: _cartItemCount > 0,
+                  label: Text(_cartItemCount.toString()),
+                  child: const Icon(Icons.shopping_cart),
+                ),
                 label: 'Cart',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.list_alt_outlined),
                 activeIcon: Icon(Icons.list_alt),
                 label: 'My Orders',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.volunteer_activism_outlined),
                 activeIcon: Icon(Icons.volunteer_activism),
                 label: 'Donations',
