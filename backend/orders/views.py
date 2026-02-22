@@ -310,7 +310,7 @@ def place_direct_order(request, user_id):
         variant = ProductVariant.objects.filter(product=product, quantity=unit_value).first()
         
         price_at_purchase = product.price
-        total_amount = product.price * quantity * unit_value
+        total_amount = float(product.price) * quantity * unit_value
         product_name = product.name
         
         if variant:
@@ -318,7 +318,7 @@ def place_direct_order(request, user_id):
             if deduction_quantity > float(variant.stock_quantity):
                 return Response({'error': f"Not enough stock for {product.name} ({variant.quantity} {variant.unit})"}, status=status.HTTP_400_BAD_REQUEST)
             price_at_purchase = variant.price
-            total_amount = variant.price * quantity
+            total_amount = float(variant.price) * quantity
             product_name = f"{product.name} ({variant.quantity} {variant.unit})"
             
             variant.stock_quantity = float(variant.stock_quantity) - deduction_quantity

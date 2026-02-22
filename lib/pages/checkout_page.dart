@@ -19,7 +19,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   dynamic _selectedAddress; // Map or Object
   bool _isLoading = true;
   String? _selectedPaymentMethod = 'COD';
-  Map<String, dynamic>? _userProfile;
+  UserProfile? _userProfile;
   
   // For new address form (if needed, or just specific address)
   final _addressController = TextEditingController();
@@ -44,33 +44,45 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final userId = await StorageService.getUserId();
-    if (userId == null) return;
+    try {
+      final userId = await StorageService.getUserId();
+      if (userId == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
 
-    // Fetch Addresses (Saved + Profile)
-    final addressResult = await ApiService.getUserAddresses(userId);
-    
-    // Fetch Profile (just in case we need user details like name) - optional if addressResult has profile addr
-    final profileResult = await ApiService.getProfile(userId);
+      // Fetch Addresses (Saved + Profile)
+      final addressResult = await ApiService.getUserAddresses(userId);
+      
+      // Fetch Profile (just in case we need user details like name) - optional if addressResult has profile addr
+      final profileResult = await ApiService.getProfile(userId);
 
-    if (mounted) {
-       setState(() {
-         _isLoading = false;
-         if (profileResult['success'] == true) {
-           _userProfile = profileResult['data'];
-         }
+      if (mounted) {
+         setState(() {
+           if (profileResult['success'] == true) {
+             _userProfile = profileResult['data'];
+           }
 
-         if (addressResult['success'] == true) {
-            final data = addressResult['data'];
-            final profileAddr = data['profile_address'];
-            final saved = data['saved_addresses'] as List;
-            
-            _savedAddresses = [profileAddr, ...saved];
-            
-            // Default select profile address or first default
-            _selectedAddress = _savedAddresses.first; 
-         }
-       });
+           if (addressResult['success'] == true) {
+              final data = addressResult['data'];
+              final profileAddr = data['profile_address'];
+              final saved = data['saved_addresses'] as List;
+              
+              _savedAddresses = [if (profileAddr != null) profileAddr, ...saved];
+              
+              // Default select profile address or first default
+              if (_savedAddresses.isNotEmpty) {
+                _selectedAddress = _savedAddresses.first; 
+              }
+           }
+         });
+      }
+    } catch (e) {
+      debugPrint("Error loading checkout data: $e");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
