@@ -5,7 +5,7 @@
         },
         {
             "src": "/.*",
-            "dist": "/index.html"
+            "dest": "/index.html"
         }
     ]
 }
