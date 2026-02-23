@@ -168,3 +168,4 @@ flutter run
 - Deployment: See `DEPLOYMENT.md`
 - Quick Start: See `QUICK_START.md`
 
+<!-- emo bro telidhu -->
