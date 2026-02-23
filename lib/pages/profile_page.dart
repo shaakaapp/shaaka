@@ -119,8 +119,18 @@ class _ProfilePageState extends State<ProfilePage> {
         _selectedState = null;
       } else if (_selectedCountry != null && _selectedState != null) {
         final states = LocationData.countryStateMap[_selectedCountry];
-        if (states != null && !states.contains(_selectedState)) {
-          _selectedState = null;
+        if (states != null) {
+          bool found = false;
+          for (String s in states) {
+            if (s.toLowerCase() == _selectedState!.toLowerCase()) {
+              _selectedState = s;
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            _selectedState = null;
+          }
         }
       }
       _pincodeController.text = _userProfile!.pincode ?? '';
@@ -324,7 +334,7 @@ class _ProfilePageState extends State<ProfilePage> {
             if (placemark.administrativeArea != null && LocationData.countryStateMap.containsKey(_selectedCountry)) {
                 String adminArea = placemark.administrativeArea!.toUpperCase();
                 for (String state in LocationData.countryStateMap[_selectedCountry]!) {
-                    if (adminArea.contains(state) || state.contains(adminArea)) {
+                    if (adminArea.contains(state.toUpperCase()) || state.toUpperCase().contains(adminArea)) {
                         mappedState = state;
                         break;
                     }

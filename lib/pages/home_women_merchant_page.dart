@@ -61,6 +61,13 @@ class _HomeWomenMerchantPageState extends State<HomeWomenMerchantPage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
+        if (_selectedIndex != 0) {
+          setState(() {
+            _selectedIndex = 0;
+            _refreshKey++;
+          });
+          return false;
+        }
         final now = DateTime.now();
         if (_lastPressedAt == null || 
             now.difference(_lastPressedAt!) > const Duration(seconds: 2)) {

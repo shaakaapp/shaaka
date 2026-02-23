@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../models/product.dart';
 import '../services/api_service.dart';
+import '../utils/responsive.dart';
 import 'search_results_page.dart';
 import 'product_details_page.dart';
 
@@ -179,118 +180,121 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Recent Searches
-            if (_recentSearches.isNotEmpty) ...[
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Recent Searches
+                if (_recentSearches.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: const Text('Recent Searches',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Wrap(
+                        spacing: 16,
+                        runSpacing: 12,
+                        children: _recentSearches.map((search) {
+                          return GestureDetector(
+                            onTap: () => _performSearch(search),
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundColor: Colors.grey[200],
+                                  child: const Icon(Icons.history, color: Colors.grey),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: 70,
+                                  child: Text(
+                                    search,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(thickness: 0.5),
+                ],
+
+                // Trending Searches / Top Products
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: const Text('Recent Searches',
+                  child: const Text('Trending Products',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
-                SizedBox(
-                  height: 100,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _recentSearches.length,
-                    itemBuilder: (context, index) {
-                      return GestureDetector(
-                        onTap: () => _performSearch(_recentSearches[index]),
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 16.0),
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 30,
-                                backgroundColor: Colors.grey[200],
-                                child: const Icon(Icons.history, color: Colors.grey),
+                if (_isLoadingTrending)
+                     const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+                else if (_trendingProducts.isEmpty)
+                     const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text("No trending products yet."))
+                else
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 250,
+                          childAspectRatio: 3.2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                      ),
+                      itemCount: _trendingProducts.length,
+                      itemBuilder: (context, index) {
+                          final product = _trendingProducts[index];
+                          return GestureDetector(
+                          onTap: () {
+                               Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (context) => ProductDetailsPage(product: product))
+                              );
+                          },
+                          child: Container(
+                              decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(8),
                               ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                width: 70,
-                                child: Text(
-                                  _recentSearches[index],
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
+                              padding: const EdgeInsets.all(8),
+                              child: Row(
+                              children: [
+                                  Container(
+                                  width: 40,
+                                  height: 40,
+                                  color: Colors.grey[200],
+                                  child: product.firstImageUrl != null 
+                                      ? Image.network(product.firstImageUrl!, fit: BoxFit.cover, errorBuilder: (c,e,s) => const Icon(Icons.broken_image, size: 20))
+                                      : const Icon(Icons.trending_up, size: 20, color: Colors.grey),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                  child: Text(
+                                      product.name,
+                                      style: const TextStyle(fontSize: 13),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                  ),
+                                  ),
+                              ],
                               ),
-                            ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const Divider(thickness: 0.5),
-            ],
-
-            // Trending Searches / Top Products
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: const Text('Trending Products', // Renamed as we are showing products
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
-            if (_isLoadingTrending)
-                 const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
-            else if (_trendingProducts.isEmpty)
-                 const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text("No trending products yet."))
-            else
-                GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 3.5, // Wide minimal cards
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                ),
-                itemCount: _trendingProducts.length,
-                itemBuilder: (context, index) {
-                    final product = _trendingProducts[index];
-                    return GestureDetector(
-                    onTap: () {
-                         Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => ProductDetailsPage(product: product))
-                        );
-                    },
-                    child: Container(
-                        decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: Row(
-                        children: [
-                            Container(
-                            width: 40,
-                            height: 40,
-                            color: Colors.grey[200],
-                            child: product.firstImageUrl != null 
-                                ? Image.network(product.firstImageUrl!, fit: BoxFit.cover, errorBuilder: (c,e,s) => const Icon(Icons.broken_image, size: 20))
-                                : const Icon(Icons.trending_up, size: 20, color: Colors.grey),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                            child: Text(
-                                product.name,
-                                style: const TextStyle(fontSize: 13),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                            ),
-                            ),
-                        ],
-                        ),
+                          );
+                      },
                     ),
-                    );
-                },
-                ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

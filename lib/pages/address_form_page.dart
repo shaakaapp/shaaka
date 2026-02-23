@@ -109,6 +109,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
             _townCityController.text = placemark.locality ?? placemark.subAdministrativeArea ?? '';
             _areaController.text = placemark.subLocality ?? placemark.thoroughfare ?? '';
             _landmarkController.text = placemark.name ?? '';
+            _flatController.clear(); // GPS can't determine flat/building details
             _latitude = position.latitude;
             _longitude = position.longitude;
             
