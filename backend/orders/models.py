@@ -101,3 +101,18 @@ class CancelledOrder(models.Model):
 
     def __str__(self):
         return f"Cancellation for Order #{self.order.id}"
+
+class Transaction(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='transaction')
+    transaction_id = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    payment_method = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, default='Pending') # Pending, Success, Failed
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'transactions'
+
+    def __str__(self):
+        return f"Transaction {self.transaction_id or 'COD'} for Order #{self.order.id}"
+

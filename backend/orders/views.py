@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from .models import Cart, CartItem, Order, OrderItem, CancelledOrder
+from .models import Cart, CartItem, Order, OrderItem, CancelledOrder, Transaction
 from products.models import Product, ProductVariant
 from users.models import UserProfile
 from .serializers import CartSerializer, OrderSerializer
@@ -171,6 +171,7 @@ def clear_cart(request, user_id):
             'state': serializers.CharField(required=False),
             'pincode': serializers.CharField(required=False),
             'payment_method': serializers.CharField(default='COD'),
+            'is_paid': serializers.BooleanField(default=False),
         }
     ),
     responses={201: OrderSerializer}
@@ -191,6 +192,7 @@ def place_order(request, user_id):
         state = request.data.get('state') or user.state
         pincode = request.data.get('pincode') or user.pincode
         payment_method = request.data.get('payment_method', 'COD')
+        is_paid = request.data.get('is_paid', False)
 
         if not shipping_address:
              return Response({'error': 'Shipping address required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -203,7 +205,8 @@ def place_order(request, user_id):
             state=state,
             pincode=pincode,
             total_amount=cart.total_price,
-            payment_method=payment_method
+            payment_method=payment_method,
+            is_paid=is_paid
         )
         
         # Move items to Order Items and Deduct Stock
@@ -258,6 +261,14 @@ def place_order(request, user_id):
         # Clear Cart
         cart.items.all().delete()
         
+        # Record Transaction
+        Transaction.objects.create(
+            order=order,
+            payment_method=payment_method,
+            amount=order.total_amount,
+            status='Success' if is_paid else 'Pending'
+        )
+        
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
         
     except UserProfile.DoesNotExist:
@@ -274,6 +285,7 @@ def place_order(request, user_id):
             'state': serializers.CharField(required=False),
             'pincode': serializers.CharField(required=False),
             'payment_method': serializers.CharField(default='COD'),
+            'is_paid': serializers.BooleanField(default=False),
             'product_id': serializers.IntegerField(),
             'quantity': serializers.FloatField(default=1.0),
             'unit_value': serializers.FloatField(default=1.0)
@@ -293,6 +305,7 @@ def place_direct_order(request, user_id):
         state = request.data.get('state') or user.state
         pincode = request.data.get('pincode') or user.pincode
         payment_method = request.data.get('payment_method', 'COD')
+        is_paid = request.data.get('is_paid', False)
         
         product_id = request.data.get('product_id')
         quantity = float(request.data.get('quantity', 1.0))
@@ -343,7 +356,8 @@ def place_direct_order(request, user_id):
             state=state,
             pincode=pincode,
             total_amount=total_amount,
-            payment_method=payment_method
+            payment_method=payment_method,
+            is_paid=is_paid
         )
 
         OrderItem.objects.create(
@@ -352,6 +366,14 @@ def place_direct_order(request, user_id):
             product_name=product_name,
             quantity=deduction_quantity if not variant else quantity, 
             price_at_purchase=price_at_purchase
+        )
+
+        # Record Transaction
+        Transaction.objects.create(
+            order=order,
+            payment_method=payment_method,
+            amount=total_amount,
+            status='Success' if is_paid else 'Pending'
         )
         
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)

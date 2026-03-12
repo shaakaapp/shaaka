@@ -5,6 +5,8 @@ import '../models/user_profile.dart';
 import 'my_orders_page.dart';
 import 'address_form_page.dart';
 import '../utils/responsive.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+
 
 class CheckoutPage extends StatefulWidget {
   final Map<String, dynamic>? directOrderData;
@@ -21,6 +23,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
   bool _isLoading = true;
   String? _selectedPaymentMethod = 'COD';
   UserProfile? _userProfile;
+  late Razorpay _razorpay;
+  double _totalAmount = 0.0;
+  
+  // Razorpay Keys
+  static const String _razorpayKeyId = 'rzp_test_SQJUGMW1QfXb9q';
+
   
   // For new address form (if needed, or just specific address)
   final _addressController = TextEditingController();
@@ -32,6 +40,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void initState() {
     super.initState();
     _loadData();
+    _initializeRazorpay();
+  }
+
+  void _initializeRazorpay() {
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+    debugPrint("Payment Success: ${response.paymentId}");
+    _placeOrderFinal(isPaid: true);
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    setState(() => _isLoading = false);
+    debugPrint("Payment Error: ${response.code} - ${response.message}");
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Payment Failed: ${response.message}"), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    debugPrint("External Wallet: ${response.walletName}");
   }
 
   @override
@@ -40,6 +75,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     _cityController.dispose();
     _stateController.dispose();
     _pincodeController.dispose();
+    _razorpay.clear(); // Clear razorpay listeners
     super.dispose();
   }
 
@@ -57,6 +93,29 @@ class _CheckoutPageState extends State<CheckoutPage> {
       
       // Fetch Profile (just in case we need user details like name) - optional if addressResult has profile addr
       final profileResult = await ApiService.getProfile(userId);
+
+      // Fetch Cart Total if not a direct order
+      if (widget.directOrderData == null) {
+        final cartResult = await ApiService.getCart(userId);
+        if (cartResult['success'] == true) {
+          _totalAmount = cartResult['data'].totalPrice;
+        }
+      } else {
+        // Calculate total for direct order
+        // data contains: product_id, quantity, unit_value. We need price.
+        final prodId = widget.directOrderData!['product_id'];
+        final prodResult = await ApiService.getProductDetails(prodId);
+        if (prodResult['success'] == true) {
+           final product = prodResult['data'];
+           final qty = widget.directOrderData!['quantity'];
+           final uv = widget.directOrderData!['unit_value'];
+           
+           // Simulating logic from backend/cart models for direct order total
+           // Check if variant exists or use base price
+           _totalAmount = (product.price * qty * uv).toDouble(); 
+           // In a real app, we'd ideally get this total from the previous page or backend
+        }
+      }
 
       if (mounted) {
          setState(() {
@@ -155,12 +214,45 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<void> _placeOrder() async {
     if (_selectedAddress == null) {
+
        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a delivery address')));
        return;
     }
 
-    setState(() => _isLoading = true);
+    if (_selectedPaymentMethod == 'Online') {
+      _startRazorpayPayment();
+    } else {
+      _placeOrderFinal();
+    }
+  }
 
+  void _startRazorpayPayment() {
+    setState(() => _isLoading = true);
+    
+    var options = {
+      'key': _razorpayKeyId,
+      'amount': (_totalAmount * 100).toInt(), // Amount in paise
+      'name': 'Shaaka',
+      'description': 'Order Payment',
+      'prefill': {
+        'contact': _userProfile?.mobileNumber ?? '',
+      },
+
+      'external': {
+        'wallets': ['paytm']
+      }
+    };
+
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint("Error opening Razorpay: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _placeOrderFinal({bool isPaid = false}) async {
+    setState(() => _isLoading = true);
     final userId = await StorageService.getUserId();
     if (userId == null) return;
 
@@ -182,6 +274,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'state': _selectedAddress['state'],
       'pincode': _selectedAddress['pincode'],
       'payment_method': _selectedPaymentMethod,
+      'is_paid': isPaid,
     };
 
     dynamic result;
@@ -330,10 +423,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     onChanged: (val) => setState(() => _selectedPaymentMethod = val),
                   ),
                   RadioListTile<String>(
-                    title: const Text('Online Payment (Coming Soon)'),
+                    title: const Text('Online Payment (Razorpay)'),
                     value: 'Online',
                     groupValue: _selectedPaymentMethod,
-                    onChanged: null, // Disabled
+                    onChanged: (val) => setState(() => _selectedPaymentMethod = val),
                   ),
                   const SizedBox(height: 32),
                   SizedBox(
