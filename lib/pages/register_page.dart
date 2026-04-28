@@ -57,7 +57,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   final ImagePicker _imagePicker = ImagePicker();
 
-  final List<String> _categories = ['Customer', 'Vendor', 'Women Merchant'];
+  final List<String> _categories = ['Customer'];
   final List<String> _genders = ['Male', 'Female', 'Other'];
 
   @override

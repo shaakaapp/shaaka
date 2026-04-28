@@ -369,7 +369,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       }
                       
                       final city = addr['town_city'] ?? addr['city'] ?? '';
-                      final subtitle = "$addressText\n$city, ${addr['state']} - ${addr['pincode']}\n${addr['mobile_number'] ?? ''}";
+                      final state = addr['state'] ?? '';
+                      final pincode = addr['pincode'] ?? '';
+                      
+                      String subtitle = addressText;
+                      if (city.isNotEmpty || state.isNotEmpty || pincode.isNotEmpty) {
+                        subtitle += "\n$city${city.isNotEmpty && state.isNotEmpty ? ', ' : ''}$state${(city.isNotEmpty || state.isNotEmpty) && pincode.isNotEmpty ? ' - ' : ''}$pincode";
+                      }
+                      if (addr['mobile_number'] != null && addr['mobile_number'].toString().isNotEmpty) {
+                        subtitle += "\n${addr['mobile_number']}";
+                      }
                       
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),

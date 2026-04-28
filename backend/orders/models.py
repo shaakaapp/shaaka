@@ -58,10 +58,10 @@ class Order(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='orders')
     
     # Snapshot of address at time of order
-    shipping_address = models.TextField()
-    city = models.CharField(max_length=100)
-    state = models.CharField(max_length=100)
-    pincode = models.CharField(max_length=20)
+    shipping_address = models.TextField(blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    state = models.CharField(max_length=100, blank=True, null=True)
+    pincode = models.CharField(max_length=20, blank=True, null=True)
     
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Placed')
